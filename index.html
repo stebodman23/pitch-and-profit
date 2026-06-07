@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pitch & Profit — World Cup 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css" rel="stylesheet">
+<style>
+:root{
+  --gold:#1a6b3a;--gold2:#228b4a;--red:#d32f2f;--green:#1a6b3a;--blue:#1565c0;
+  --dark:#f5f5f5;--s1:#ffffff;--s2:#f9f9f9;--s3:#f0f0f0;--s4:#e5e5e5;
+  --t1:#1a1a1a;--t2:#555555;--t3:#888888;
+  --bdr:rgba(0,0,0,0.08);--bdr2:rgba(0,0,0,0.15);
+  --fd:'Bebas Neue',sans-serif;--fb:'Nunito',sans-serif;--fm:'Roboto Mono',monospace;
+  --r:8px;--r2:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--dark);color:var(--t1);font-family:var(--fb);font-size:16px;line-height:1.6;letter-spacing:0.01em;overflow-x:hidden}
+.screen{display:none;min-height:100vh;flex-direction:column}.screen.on{display:flex}
+.topbar{background:var(--s1);border-bottom:1px solid rgba(0,0,0,0.12);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:50}
+.logo{font-family:var(--fd);font-size:28px;letter-spacing:.08em;color:var(--green)}
+.logo em{color:var(--t2);font-style:normal;font-size:16px}
+.auth-c{flex:1;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-box{width:100%;max-width:380px}
+.auth-logo{font-family:var(--fd);font-size:58px;letter-spacing:.1em;color:var(--green);text-align:center;line-height:1;margin-bottom:8px}
+.auth-sub{text-align:center;color:var(--t2);font-size:16px;margin-bottom:26px}
+.atabs{display:flex;background:var(--s2);border-radius:var(--r);overflow:hidden;margin-bottom:16px;border:1px solid var(--bdr2)}
+.atab{flex:1;padding:11px;background:none;border:none;color:var(--t2);font-family:var(--fb);font-size:15px;font-weight:600;cursor:pointer;transition:.15s}
+.atab.on{background:var(--green);color:#fff}
+.fpanel{display:none}.fpanel.on{display:block}
+.fg{margin-bottom:11px}
+.fg label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:5px}
+.fg input{width:100%;background:var(--s3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--t1);font-family:var(--fb);font-size:15px;padding:11px 14px;outline:none;transition:.15s}
+.fg input:focus{border-color:var(--green)}
+.amsg{border-radius:var(--r);padding:9px 13px;font-size:13px;margin-bottom:11px;display:none}
+.amsg.on{display:block}
+.amsg.err{background:rgba(230,57,70,.12);border:1px solid rgba(230,57,70,.3);color:var(--red)}
+.amsg.ok{background:rgba(46,194,126,.12);border:1px solid rgba(46,194,126,.3);color:var(--green)}
+.hint{text-align:center;font-size:11px;color:var(--t3);margin-top:8px}
+.setup-banner{background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--t2);line-height:1.6}
+.setup-banner b{color:var(--green)}
+.mbody{flex:1;padding:18px;max-width:920px;width:100%;margin:0 auto}
+.tabs{display:flex;gap:2px;background:var(--s2);border-radius:var(--r2);padding:3px;margin-bottom:18px;border:1px solid var(--bdr)}
+.tab{flex:1;padding:9px 4px;border:none;background:none;color:var(--t2);font-family:var(--fb);font-size:14px;font-weight:600;cursor:pointer;border-radius:10px;transition:.15s;text-align:center}
+.tab:hover{color:var(--t1);background:var(--s3)}.tab.on{background:var(--green);color:#fff}
+.page{display:none}.page.on{display:block}
+.phase-track{display:flex;margin-bottom:18px;border-radius:var(--r2);overflow:hidden;border:1px solid var(--bdr)}
+.ps{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);background:var(--s2);border-right:1px solid var(--bdr);transition:.2s}
+.ps:last-child{border-right:none}
+.ps.done{background:rgba(26,107,58,.1);color:var(--green)}
+.ps.now{background:rgba(26,107,58,.15);color:var(--gold)}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.stat{background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);padding:16px 18px}
+.sl{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:5px}
+.sv{font-family:var(--fd);font-size:26px;letter-spacing:.04em}
+.sv.g{color:var(--green)}.sv.gr{color:var(--green)}.sv.r{color:var(--red)}.sv.n{color:var(--t2)}
+.card{background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r2);padding:22px}
+.card+.card{margin-top:12px}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.ct{font-family:var(--fd);font-size:20px;letter-spacing:.05em;color:var(--t1)}
+.badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:4px 10px;border-radius:4px}
+.b-gold{background:rgba(26,107,58,.12);color:var(--gold);border:1px solid rgba(26,107,58,.3)}
+.b-green{background:rgba(26,107,58,.12);color:var(--green);border:1px solid rgba(26,107,58,.3)}
+.b-red{background:rgba(211,47,47,.1);color:var(--red);border:1px solid rgba(211,47,47,.3)}
+.b-gray{background:var(--s3);color:var(--t2);border:1px solid var(--bdr2)}
+.b-blue{background:rgba(21,101,192,.1);color:var(--blue);border:1px solid rgba(21,101,192,.3)}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th{text-align:left;color:var(--t3);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:500;padding:7px 10px;border-bottom:1px solid var(--bdr)}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--bdr);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:rgba(255,255,255,.02)}
+.hrow{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--bdr)}
+.hrow:last-child{border-bottom:none}
+.hleft{display:flex;align-items:center;gap:9px}
+.up{color:var(--green)}.dn{color:var(--red)}.fl{color:var(--t3)}
+.pbar{height:3px;background:var(--s4);border-radius:2px;overflow:hidden;width:70px;margin-top:3px}
+.pfill{height:100%;background:linear-gradient(90deg,#1a6b3a,#2d9e5f);border-radius:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:10px 18px;border-radius:var(--r);font-family:var(--fb);font-size:15px;font-weight:600;cursor:pointer;border:1px solid var(--bdr2);background:var(--s3);color:var(--t1);transition:.15s}
+.btn:hover{background:var(--s2)}
+.btn-g{background:var(--green);color:#fff;border-color:var(--green);font-weight:600}
+.btn-g:hover{background:var(--gold2)}
+.btn-r{background:rgba(211,47,47,.08);color:var(--red);border-color:rgba(211,47,47,.3)}
+.btn-r:hover{background:rgba(211,47,47,.15)}
+.btn-b{background:rgba(21,101,192,.08);color:var(--blue);border-color:rgba(21,101,192,.3)}
+.btn-b:hover{background:rgba(21,101,192,.15)}
+.btn-sm{padding:7px 13px;font-size:14px}
+.btn-xs{padding:5px 10px;font-size:13px;border-radius:5px}
+.wbanner{display:flex;align-items:center;gap:10px;border-radius:var(--r);padding:10px 14px;margin-bottom:14px}
+.wbanner.open{background:rgba(26,107,58,.08);border:1px solid rgba(26,107,58,.25)}
+.wbanner.closed{background:rgba(80,80,80,.1);border:1px solid var(--bdr)}
+.wdot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+.wdot.off{background:var(--t3);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.wtext{font-size:13px;color:var(--t2)}.wtext b{color:var(--t1)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:540px){.two{grid-template-columns:1fr}}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:600px){.three{grid-template-columns:1fr}}
+.ig{margin-bottom:11px}
+.ig label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:5px}
+.ig input,.ig select{width:100%;background:var(--s3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--t1);font-family:var(--fb);font-size:15px;padding:10px 13px;outline:none;transition:.15s}
+.ig input:focus,.ig select:focus{border-color:var(--green)}
+.ig select option{background:var(--s3)}
+.prev{font-size:14px;color:var(--t2);min-height:20px;margin-bottom:8px}
+.ferr{font-size:14px;color:var(--red);min-height:18px;margin-bottom:8px}
+.txrow{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr);font-size:14px}
+.txrow:last-child{border-bottom:none}
+.txl{color:var(--t2)}.txl b{color:var(--t1)}
+.lbrow{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--bdr)}
+.lbrow:last-child{border-bottom:none}
+.lbr{font-family:var(--fd);font-size:22px;width:32px;text-align:center}
+.lbr.g{color:#b8860b}.lbr.s{color:#aaa}.lbr.b{color:#b87333}
+.pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+@media(max-width:500px){.pgrid{grid-template-columns:1fr}}
+.pitem{background:var(--s3);border-radius:var(--r);padding:9px 11px;display:flex;align-items:center;gap:8px}
+.piname{font-size:12px;color:var(--t2);flex:1;min-width:55px}
+.piinp{width:60px!important;padding:4px 7px!important;font-size:12px!important;text-align:center}
+.fi{width:1.4em;height:1.05em;display:inline-block;vertical-align:middle;border-radius:2px;flex-shrink:0}
+.ritem{display:flex;gap:12px;margin-bottom:14px}
+.rnum{font-family:var(--fd);font-size:30px;color:var(--green);line-height:1;min-width:28px}
+.rtxt{color:var(--t2);line-height:1.75;padding-top:4px;font-size:15px}
+.rtxt b{color:var(--t1)}
+.sep{height:1px;background:var(--bdr);margin:14px 0}
+.empty{text-align:center;padding:26px 0;color:var(--t3);font-size:13px}
+.mono{font-family:var(--fm);font-size:12px}
+.loading-overlay{position:fixed;inset:0;background:rgba(245,245,245,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;gap:14px}
+.spinner{width:36px;height:36px;border:3px solid var(--s4);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lmsg{font-size:14px;color:var(--t2)}
+#toast{position:fixed;bottom:20px;right:20px;z-index:999;padding:13px 18px;border-radius:var(--r);font-size:15px;font-weight:500;opacity:0;transform:translateY(6px);transition:.22s;pointer-events:none;max-width:300px}
+#toast.on{opacity:1;transform:translateY(0)}
+#toast.ok{background:#1a6b3a;color:#fff}
+#toast.err{background:#d32f2f;color:#fff}
+@media(max-width:580px){.sg{grid-template-columns:1fr 1fr}.topbar{padding:0 12px}.mbody{padding:12px}}
+
+/* ── ODDS FETCHER ── */
+.odds-panel{background:var(--s3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:16px;margin-bottom:14px}
+.odds-status{font-size:13px;color:var(--t2);margin:10px 0 0;line-height:1.6;min-height:20px}
+.odds-status b{color:var(--t1)}
+.odds-stream{background:var(--dark);border:1px solid var(--bdr);border-radius:var(--r);padding:12px;font-size:12px;color:var(--t2);line-height:1.7;max-height:180px;overflow-y:auto;margin-top:10px;display:none;font-family:var(--fm)}
+.odds-stream.on{display:block}
+.fetched-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px}
+.fetched-row:last-child{border-bottom:none}
+.fetched-name{color:var(--t1);font-weight:500;width:130px}
+.fetched-prob{color:var(--gold);font-family:var(--fm);width:50px}
+.fetched-price{color:var(--green);font-family:var(--fm);width:50px}
+.fetched-apply{background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;text-decoration:underline}
+
+/* ── CALC ── */
+.calc-panel{background:var(--s3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:16px;margin-bottom:14px}
+.calc-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+.calc-row .ig{margin-bottom:0;flex:1;min-width:100px}
+.calc-result{background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--t2);min-height:40px}
+.calc-result b{color:var(--gold);font-family:var(--fm)}
+.odds-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+.odds-table td,.odds-table th{padding:5px 8px;border-bottom:1px solid var(--bdr);text-align:left}
+.odds-table th{color:var(--t3);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.odds-table td:last-child{color:var(--gold);font-family:var(--fm)}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="loading" class="loading-overlay" style="display:none">
+  <div class="spinner"></div>
+  <div class="lmsg" id="lmsg">Loading...</div>
+</div>
+
+<!-- ── AUTH ── -->
+<div id="s-auth" class="screen on">
+  <div class="topbar"><div class="logo">PITCH <em>&amp;</em> PROFIT</div></div>
+  <div class="auth-c">
+    <div class="auth-box">
+      <div class="auth-logo">PITCH<br>&amp; PROFIT</div>
+      <div class="auth-sub">World Cup 2026 · Fantasy Share Market</div>
+      <div id="debug-result" class="setup-banner" style="display:none"></div>
+      <div id="needs-setup" class="setup-banner" style="display:none">
+        ⚠️ <b>Setup needed:</b> Replace <b>YOUR_APPS_SCRIPT_URL</b> in this HTML file with your deployed Apps Script /exec URL.
+      </div>
+      <div id="ae" class="amsg err"></div>
+      <div id="as2" class="amsg ok"></div>
+      <div class="atabs">
+        <button id="atb-li" class="atab on" onclick="aswitch('li')">Sign in</button>
+        <button id="atb-rg" class="atab" onclick="aswitch('rg')">Register</button>
+      </div>
+      <div id="fp-li" class="fpanel on">
+        <div class="fg"><label>Username</label><input id="li-u" placeholder="your username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <div class="fg"><label>Password</label><input id="li-p" type="password" placeholder="password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn btn-g" style="width:100%" onclick="doLogin()">Sign in</button>
+      <div style="margin-top:10px;text-align:center">
+        <button class="btn btn-sm" style="font-size:11px;color:var(--t3);border-color:var(--bdr)" onclick="testConnection()">🔌 Test server connection</button>
+      </div>
+      </div>
+      <div id="fp-rg" class="fpanel">
+        <div class="fg"><label>Display name</label><input id="rg-n" placeholder="e.g. Jamie K" maxlength="20"></div>
+        <div class="fg"><label>Username</label><input id="rg-u" placeholder="letters, numbers, _ only"></div>
+        <div class="fg"><label>Password</label><input id="rg-p" type="password" placeholder="min 4 characters" onkeydown="if(event.key==='Enter')doRegister()"></div>
+        <button class="btn btn-g" style="width:100%" onclick="doRegister()">Create account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="s-app" class="screen">
+  <div class="topbar">
+    <div class="logo">PITCH <em>&amp;</em> PROFIT</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12px;color:var(--t2)" id="tb-user"></span>
+      <button class="btn btn-sm btn-r" id="btn-adm" style="display:none" onclick="goAdmin()">⚙ Admin</button>
+      <button class="btn btn-sm" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+  <div class="mbody">
+    <div class="phase-track" id="phase-track"></div>
+    <div class="tabs">
+      <button class="tab on" onclick="goTab('portfolio',this)">Portfolio</button>
+      <button class="tab" onclick="goTab('market',this)">Market</button>
+      <button class="tab" onclick="goTab('trade',this)">Trade</button>
+      <button class="tab" onclick="goTab('leaderboard',this)">Leaderboard</button>
+      <button class="tab" onclick="goTab('rules',this)">Rules</button>
+    </div>
+
+    <!-- PORTFOLIO -->
+    <div id="p-portfolio" class="page on">
+      <div class="sg">
+        <div class="stat"><div class="sl">Budget</div><div class="sv g" id="st-bud">—</div></div>
+        <div class="stat"><div class="sl">Holdings</div><div class="sv" id="st-hld">—</div></div>
+        <div class="stat"><div class="sl">Total</div><div class="sv" id="st-tot">—</div></div>
+        <div class="stat"><div class="sl">P&amp;L</div><div class="sv n" id="st-pnl">—</div></div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ct">Holdings</span><span class="badge b-gold" id="cap-badge">Pre-tournament: 0/3</span></div>
+        <div id="hlist"><div class="empty">No holdings — go to Trade to buy shares</div></div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ct">Transactions</span></div>
+        <div id="txlist"><div class="empty">No transactions yet</div></div>
+      </div>
+    </div>
+
+    <!-- MARKET -->
+    <div id="p-market" class="page">
+      <div class="wbanner open" id="mkt-banner">
+        <div class="wdot" id="mkt-dot"></div>
+        <div class="wtext" id="mkt-txt"></div>
+      </div>
+      <div id="mkt-lock-banner" style="display:none;background:rgba(211,47,47,0.08);border:1px solid rgba(211,47,47,0.3);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:15px;color:var(--red)"></div>
+      <div class="card" style="padding:6px 0">
+        <table class="tbl">
+          <thead><tr>
+            <th style="padding-left:14px">Country</th>
+            <th>Group</th><th>Prob.</th><th>Price</th><th>Change</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="mkt-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TRADE -->
+    <div id="p-trade" class="page">
+      <div class="wbanner open" id="trd-banner">
+        <div class="wdot" id="trd-dot"></div>
+        <div class="wtext" id="trd-txt"></div>
+      </div>
+      <div id="match-lock-banner" style="display:none;background:rgba(211,47,47,0.08);border:1px solid rgba(211,47,47,0.3);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:15px;color:var(--red)"></div>
+      <div class="two">
+        <div class="card">
+          <div class="ch"><span class="ct">Buy</span></div>
+          <div class="ig"><label>Country</label><select id="bc" onchange="pbuy()"><option value="">— select —</option></select></div>
+          <div class="ig"><label>Shares</label><input type="number" id="bq" value="1" min="1" oninput="pbuy()"></div>
+          <div class="prev" id="bprev"></div><div class="ferr" id="berr"></div>
+          <button class="btn btn-g" style="width:100%" onclick="exBuy()">Buy shares</button>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="ct">Sell</span></div>
+          <div class="ig"><label>Holding</label><select id="sc" onchange="psell()"><option value="">— select —</option></select></div>
+          <div class="ig"><label>Shares</label><input type="number" id="sq" value="1" min="1" oninput="psell()"></div>
+          <div class="prev" id="sprev"></div><div class="ferr" id="serr"></div>
+          <button class="btn btn-r" style="width:100%" onclick="exSell()">Sell shares</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div id="p-leaderboard" class="page">
+      <div class="card">
+        <div class="ch"><span class="ct">Leaderboard</span><span class="badge b-gray" id="lb-badge">Pre-tournament</span></div>
+        <div id="lblist"><div class="empty">Loading...</div></div>
+      </div>
+      <div style="text-align:center;margin-top:8px;font-size:11px;color:var(--t3)">Portfolio = remaining budget + current share value</div>
+    </div>
+
+    <!-- RULES -->
+    <div id="p-rules" class="page">
+      <div class="card">
+        <div class="ch"><span class="ct">How to play</span></div>
+        <div class="ritem"><div class="rnum">1</div><div class="rtxt"><b>Starting budget:</b> Each player receives £1,000 to invest in country shares.</div></div>
+        <div class="ritem"><div class="rnum">2</div><div class="rtxt"><b>Pre-tournament:</b> Hold shares in up to <b>3 countries</b>. Prices reflect win probability — favourites cost more.</div></div>
+        <div class="ritem"><div class="rnum">3</div><div class="rtxt"><b>Market windows:</b> Market opens after each stage. Prices update. The 3-country cap lifts once the tournament starts.</div></div>
+        <div class="ritem"><div class="rnum">4</div><div class="rtxt"><b>Elimination:</b> Knocked-out countries drop to £0. Sell before they go!</div></div>
+        <div class="ritem"><div class="rnum">5</div><div class="rtxt"><b>Winning:</b> Highest portfolio (cash + shares) when the trophy is lifted wins.</div></div>
+        <div class="sep"></div>
+        <div style="color:var(--t3);font-size:12px">Windows: Pre-tournament · Group stage · R16 · Quarters · Semis · Post-final</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADMIN ── -->
+<div id="s-admin" class="screen">
+  <div class="topbar">
+    <div class="logo" style="color:var(--red)">ADMIN <em style="color:var(--t3)">Pitch &amp; Profit</em></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="hideAdmin()">← Game</button>
+      <button class="btn btn-sm btn-r" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+  <div class="mbody">
+
+    <!-- LIVE ODDS FETCHER -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="ch">
+        <span class="ct">Live odds fetcher</span>
+        <span class="badge b-blue">AI powered</span>
+      </div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:12px;line-height:1.6">
+        Fetches current World Cup 2026 outright winner odds from betting sites, converts them to win probabilities and share prices, and lets you apply them in one click.
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-b" id="fetch-odds-btn" onclick="fetchLiveOdds()">⚡ Fetch live odds now</button>
+        <button class="btn btn-g btn-sm" onclick="applyAllFetched()" id="apply-all-btn" style="display:none">✓ Apply all &amp; save</button>
+      </div>
+      <div class="odds-status" id="odds-status"></div>
+      <div class="odds-stream" id="odds-stream"></div>
+      <div id="fetched-results" style="margin-top:12px"></div>
+    </div>
+
+    <!-- ODDS CALCULATOR -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="ch"><span class="ct">Odds → price calculator</span></div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Convert any betting odds format to a win probability and share price.</p>
+      <div class="calc-row">
+        <div class="ig">
+          <label>Odds format</label>
+          <select id="calc-fmt" onchange="calcOdds()">
+            <option value="fractional">Fractional (e.g. 6/1)</option>
+            <option value="decimal">Decimal (e.g. 7.0)</option>
+            <option value="american">American (e.g. +600)</option>
+          </select>
+        </div>
+        <div class="ig">
+          <label>Odds value</label>
+          <input id="calc-val" placeholder="e.g. 6/1" oninput="calcOdds()">
+        </div>
+        <button class="btn" onclick="calcOdds()" style="margin-bottom:0">Calculate</button>
+      </div>
+      <div class="calc-result" id="calc-result">Enter odds above to see the probability and share price</div>
+      <div style="margin-top:14px">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Quick reference</div>
+        <table class="odds-table">
+          <thead><tr><th>Fractional</th><th>Decimal</th><th>American</th><th>Probability</th><th>Share price</th></tr></thead>
+          <tbody id="odds-ref-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TOURNAMENT CONTROL -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="ch"><span class="ct">Tournament control</span></div>
+      <div class="two" style="margin-bottom:12px">
+        <div class="ig"><label>Phase</label>
+          <select id="adm-phase">
+            <option value="pre">Pre-tournament</option>
+            <option value="groups">Group stage</option>
+            <option value="r16">Round of 16</option>
+            <option value="quarters">Quarter-finals</option>
+            <option value="semis">Semi-finals</option>
+            <option value="final">Final</option>
+            <option value="complete">Complete</option>
+          </select>
+        </div>
+        <div class="ig"><label>Market window</label>
+          <select id="adm-mkt">
+            <option value="1">Open — players can trade</option>
+            <option value="0">Closed — no trading</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-g" onclick="admSavePhase()">Save settings</button>
+    </div>
+
+    <!-- SHARE PRICES -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="ch">
+        <span class="ct">Share prices</span>
+        <span style="font-size:12px;color:var(--t3)">prob% × £10 = price</span>
+      </div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Update after each stage. Eliminated countries: set price to 0.</div>
+      <div class="pgrid" id="adm-pgrid"></div>
+      <button class="btn btn-g" style="margin-top:12px" onclick="admSavePrices()">Save all prices</button>
+    </div>
+
+    <!-- ELIMINATE -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="ch"><span class="ct">Eliminate countries</span></div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:10px">Toggle to eliminate — shares drop to £0 for all players</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px" id="adm-elim"></div>
+    </div>
+
+    <!-- PLAYERS -->
+    <div class="card">
+      <div class="ch"><span class="ct">Players</span><button class="btn btn-sm" onclick="renderAdminPlayers()">↻ Refresh</button></div>
+      <table class="tbl">
+        <thead><tr><th>Name</th><th>Username</th><th>Budget</th><th>Holdings</th><th>Total</th><th>Countries</th></tr></thead>
+        <tbody id="adm-ptbl"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  REPLACE THIS with your Apps Script /exec URL
+// ══════════════════════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTQWor8vDDJ9mkH4uECoIzXXBcgW6reQf2ui-tJihk6pTthyv6vS5rll0SZlOs7bEX/exec';
+
+const PHASES  = ['pre','groups','r16','quarters','semis','final','complete'];
+const PLABELS = {pre:'Pre-tournament',groups:'Group stage',r16:'Round of 16',quarters:'Quarters',semis:'Semis',final:'Final',complete:'Complete'};
+// ── MATCH SCHEDULE (BST) ─────────────────────────────────────────────────
+// Trading locked from kick-off until 3 hours after start of each match
+const SCHEDULE = [
+  {ko:"2026-06-11T20:00",label:"Mexico vs South Africa"},
+  {ko:"2026-06-12T03:00",label:"South Korea vs Czech Republic"},
+  {ko:"2026-06-12T20:00",label:"Canada vs Bosnia & Herzegovina"},
+  {ko:"2026-06-13T02:00",label:"USA vs Paraguay"},
+  {ko:"2026-06-13T20:00",label:"Qatar vs Switzerland"},
+  {ko:"2026-06-13T23:00",label:"Brazil vs Morocco"},
+  {ko:"2026-06-14T02:00",label:"Haiti vs Scotland"},
+  {ko:"2026-06-14T05:00",label:"Australia vs Turkey"},
+  {ko:"2026-06-14T18:00",label:"Germany vs Curaçao"},
+  {ko:"2026-06-14T21:00",label:"Netherlands vs Japan"},
+  {ko:"2026-06-15T00:00",label:"Ivory Coast vs Ecuador"},
+  {ko:"2026-06-15T03:00",label:"Sweden vs Tunisia"},
+  {ko:"2026-06-15T17:00",label:"Spain vs Cape Verde"},
+  {ko:"2026-06-15T20:00",label:"Belgium vs Egypt"},
+  {ko:"2026-06-15T23:00",label:"Saudi Arabia vs Uruguay"},
+  {ko:"2026-06-16T02:00",label:"Iran vs New Zealand"},
+  {ko:"2026-06-16T20:00",label:"France vs Senegal"},
+  {ko:"2026-06-16T23:00",label:"Iraq vs Norway"},
+  {ko:"2026-06-17T02:00",label:"Argentina vs Algeria"},
+  {ko:"2026-06-17T05:00",label:"Austria vs Jordan"},
+  {ko:"2026-06-17T18:00",label:"Portugal vs DR Congo"},
+  {ko:"2026-06-17T21:00",label:"England vs Croatia"},
+  {ko:"2026-06-18T00:00",label:"Ghana vs Panama"},
+  {ko:"2026-06-18T03:00",label:"Uzbekistan vs Colombia"},
+  {ko:"2026-06-18T17:00",label:"Czech Republic vs South Africa"},
+  {ko:"2026-06-18T20:00",label:"Switzerland vs Bosnia & Herzegovina"},
+  {ko:"2026-06-18T23:00",label:"Canada vs Qatar"},
+  {ko:"2026-06-19T02:00",label:"Mexico vs South Korea"},
+  {ko:"2026-06-19T20:00",label:"USA vs Australia"},
+  {ko:"2026-06-19T23:00",label:"Scotland vs Morocco"},
+  {ko:"2026-06-20T01:30",label:"Brazil vs Haiti"},
+  {ko:"2026-06-20T04:00",label:"Turkey vs Paraguay"},
+  {ko:"2026-06-20T18:00",label:"Netherlands vs Sweden"},
+  {ko:"2026-06-20T21:00",label:"Germany vs Ivory Coast"},
+  {ko:"2026-06-21T01:00",label:"Ecuador vs Curaçao"},
+  {ko:"2026-06-21T05:00",label:"Tunisia vs Japan"},
+  {ko:"2026-06-21T17:00",label:"Spain vs Saudi Arabia"},
+  {ko:"2026-06-21T20:00",label:"Belgium vs Iran"},
+  {ko:"2026-06-21T23:00",label:"Uruguay vs Cape Verde"},
+  {ko:"2026-06-22T02:00",label:"New Zealand vs Egypt"},
+  {ko:"2026-06-22T18:00",label:"Argentina vs Austria"},
+  {ko:"2026-06-22T22:00",label:"France vs Iraq"},
+  {ko:"2026-06-22T23:00",label:"Jordan vs Algeria"},
+  {ko:"2026-06-23T01:00",label:"Norway vs Senegal"},
+  {ko:"2026-06-23T18:00",label:"Portugal vs Uzbekistan"},
+  {ko:"2026-06-23T21:00",label:"England vs Ghana"},
+  {ko:"2026-06-23T22:00",label:"Panama vs Croatia"},
+  {ko:"2026-06-24T03:00",label:"Colombia vs DR Congo"},
+  {ko:"2026-06-24T20:00",label:"Switzerland vs Canada"},
+  {ko:"2026-06-24T20:00",label:"Bosnia & Herzegovina vs Qatar"},
+  {ko:"2026-06-24T23:00",label:"Morocco vs Haiti"},
+  {ko:"2026-06-24T23:00",label:"Scotland vs Brazil"},
+  {ko:"2026-06-25T02:00",label:"South Africa vs South Korea"},
+  {ko:"2026-06-25T02:00",label:"Czech Republic vs Mexico"},
+  {ko:"2026-06-25T21:00",label:"Curaçao vs Ivory Coast"},
+  {ko:"2026-06-25T21:00",label:"Ecuador vs Germany"},
+  {ko:"2026-06-26T00:00",label:"Tunisia vs Netherlands"},
+  {ko:"2026-06-26T00:00",label:"Japan vs Sweden"},
+  {ko:"2026-06-26T03:00",label:"Turkey vs USA"},
+  {ko:"2026-06-26T03:00",label:"Paraguay vs Australia"},
+  {ko:"2026-06-26T20:00",label:"Norway vs France"},
+  {ko:"2026-06-26T20:00",label:"Senegal vs Iraq"},
+  {ko:"2026-06-27T01:00",label:"Cape Verde vs Saudi Arabia"},
+  {ko:"2026-06-27T04:00",label:"New Zealand vs Belgium"},
+  {ko:"2026-06-27T04:00",label:"Egypt vs Iran"},
+  {ko:"2026-06-27T21:00",label:"Uruguay vs Spain"},
+  {ko:"2026-06-27T22:00",label:"Panama vs England"},
+  {ko:"2026-06-27T22:00",label:"Croatia vs Ghana"},
+  {ko:"2026-06-28T00:30",label:"Colombia vs Portugal"},
+  {ko:"2026-06-28T00:30",label:"DR Congo vs Uzbekistan"},
+  {ko:"2026-06-28T03:00",label:"Algeria vs Austria"},
+  {ko:"2026-06-28T03:00",label:"Jordan vs Argentina"},
+  {ko:"2026-06-28T21:00",label:"Match TBC"},
+  {ko:"2026-06-29T20:00",label:"Match TBC"},
+  {ko:"2026-06-29T23:00",label:"Match TBC"},
+  {ko:"2026-06-29T02:00",label:"Match TBC"},
+  {ko:"2026-06-30T19:00",label:"Match TBC"},
+  {ko:"2026-06-30T22:00",label:"Match TBC"},
+  {ko:"2026-06-30T01:00",label:"Match TBC"},
+  {ko:"2026-07-01T19:00",label:"Match TBC"},
+  {ko:"2026-07-01T22:00",label:"Match TBC"},
+  {ko:"2026-07-01T01:00",label:"Match TBC"},
+  {ko:"2026-07-02T20:00",label:"Match TBC"},
+  {ko:"2026-07-02T23:00",label:"Match TBC"},
+  {ko:"2026-07-02T02:00",label:"Match TBC"},
+  {ko:"2026-07-03T21:00",label:"Match TBC"},
+  {ko:"2026-07-03T00:00",label:"Match TBC"},
+  {ko:"2026-07-03T03:00",label:"Match TBC"},
+  {ko:"2026-07-04T21:00",label:"Match TBC"},
+  {ko:"2026-07-04T23:00",label:"Match TBC"},
+  {ko:"2026-07-04T02:30",label:"Match TBC"},
+  {ko:"2026-07-05T21:00",label:"Match TBC"},
+  {ko:"2026-07-05T23:00",label:"Match TBC"},
+  {ko:"2026-07-06T22:00",label:"Match TBC"},
+  {ko:"2026-07-06T01:00",label:"Match TBC"},
+  {ko:"2026-07-07T21:00",label:"Match TBC"},
+  {ko:"2026-07-07T01:00",label:"Match TBC"},
+  {ko:"2026-07-09T22:00",label:"Match TBC"},
+  {ko:"2026-07-10T23:00",label:"Match TBC"},
+  {ko:"2026-07-11T20:00",label:"Match TBC"},
+  {ko:"2026-07-11T23:00",label:"Match TBC"},
+  {ko:"2026-07-14T22:00",label:"Match TBC"},
+  {ko:"2026-07-15T22:00",label:"Match TBC"},
+  {ko:"2026-07-18T21:00",label:"Match TBC"},
+  {ko:"2026-07-19T22:00",label:"Match TBC"}
+];
+
+function getMatchLockStatus() {
+  // Returns {locked: bool, reason: string}
+  const now = new Date();
+  // Convert now to BST: BST = UTC+1, so get UTC then add 1 hour
+  // We compare against the schedule which is already in BST
+  // Create a BST "now" by using local time but treating schedule times as BST
+  const nowBST = new Date(now.toLocaleString('en-GB', {timeZone: 'Europe/London'}));
+
+  for (let i = 0; i < SCHEDULE.length; i++) {
+    const m = SCHEDULE[i];
+    // Parse kick-off as BST
+    const ko = new Date(m.ko + ':00'); // treat as local — will work if user in UK
+    // Use UTC parse + offset for reliability
+    const koParts = m.ko.split('T');
+    const dateParts = koParts[0].split('-');
+    const timeParts = koParts[1].split(':');
+    // Build date in UTC, then adjust for BST (UTC+1)
+    const koUTC = Date.UTC(
+      parseInt(dateParts[0]),
+      parseInt(dateParts[1]) - 1,
+      parseInt(dateParts[2]),
+      parseInt(timeParts[0]) - 1, // subtract 1hr to convert BST to UTC
+      parseInt(timeParts[1])
+    );
+    const koMs = koUTC;
+    const unlockMs = koMs + (3 * 60 * 60 * 1000); // 3 hours after KO
+    const nowMs = now.getTime();
+
+    if (nowMs >= koMs && nowMs <= unlockMs) {
+      const unlockTime = new Date(unlockMs);
+      const unlockStr = unlockTime.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', timeZone:'Europe/London'});
+      return {
+        locked: true,
+        reason: `🔒 Trading paused — ${m.label} is in progress. Market reopens at ${unlockStr} BST.`
+      };
+    }
+  }
+  return { locked: false, reason: '' };
+}
+
+function getNextMatch() {
+  const now = new Date();
+  const nowMs = now.getTime();
+  let next = null;
+  let nextMs = Infinity;
+
+  for (let i = 0; i < SCHEDULE.length; i++) {
+    const m = SCHEDULE[i];
+    const koParts = m.ko.split('T');
+    const dateParts = koParts[0].split('-');
+    const timeParts = koParts[1].split(':');
+    const koUTC = Date.UTC(
+      parseInt(dateParts[0]),
+      parseInt(dateParts[1]) - 1,
+      parseInt(dateParts[2]),
+      parseInt(timeParts[0]) - 1,
+      parseInt(timeParts[1])
+    );
+    if (koUTC > nowMs && koUTC < nextMs) {
+      nextMs = koUTC;
+      next = m;
+    }
+  }
+  return next;
+}
+
+
+const FLAG_ISO={'CZE':'cz','MEX':'mx','RSA':'za','KOR':'kr','BIH':'ba','CAN':'ca','QAT':'qa','SUI':'ch','BRA':'br','HAI':'ht','MAR':'ma','SCO':'gb-sct','AUS':'au','PAR':'py','TUR':'tr','USA':'us','CUW':'cw','ECU':'ec','GER':'de','CIV':'ci','JPN':'jp','NED':'nl','SWE':'se','TUN':'tn','BEL':'be','EGY':'eg','IRN':'ir','NZL':'nz','CPV':'cv','KSA':'sa','ESP':'es','URU':'uy','FRA':'fr','IRQ':'iq','NOR':'no','SEN':'sn','ALG':'dz','ARG':'ar','AUT':'at','JOR':'jo','COL':'co','COD':'cd','POR':'pt','UZB':'uz','CRO':'hr','ENG':'gb-eng','GHA':'gh','PAN':'pa'};
+function flagImg(code){
+  var iso=(FLAG_ISO[code]||'').toLowerCase();
+  if(!iso) return '';
+  return '<span class="fi fi-'+iso+'" style="margin-right:5px;font-size:1.1em"></span>';
+}
+
+let CU = null;
+let DB = null;
+let FETCHED_ODDS = []; // store fetched odds for apply-all
+
+// ── Loading ──────────────────────────────────────────────
+function showLoad(m){document.getElementById('loading').style.display='flex';document.getElementById('lmsg').textContent=m||'Loading...';}
+function hideLoad(){document.getElementById('loading').style.display='none';}
+
+// ── API ──────────────────────────────────────────────────
+async function api(params){
+  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  // Try fetch with no-cors mode via a relay approach:
+  // We send the request and read via an iframe message bridge
+  return new Promise((resolve, reject) => {
+    const rid = 'r' + Date.now() + Math.random().toString(36).slice(2);
+    const timeout = setTimeout(() => {
+      window.removeEventListener('message', handler);
+      reject(new Error('Request timed out after 30s'));
+    }, 30000);
+    function handler(e) {
+      try {
+        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (d && d._pprid === rid) {
+          clearTimeout(timeout);
+          window.removeEventListener('message', handler);
+          if (d.error) reject(new Error(d.error));
+          else resolve(d.data);
+        }
+      } catch(err) {}
+    }
+    window.addEventListener('message', handler);
+    // Use the relay iframe
+    const relay = document.getElementById('pp-relay');
+    relay.contentWindow.postMessage(JSON.stringify({_pprid: rid, url: url}), '*');
+  });
+}
+
+// ── Session ──────────────────────────────────────────────
+function saveSession(){try{localStorage.setItem('pp_s',JSON.stringify(CU));}catch{}}
+function loadSession(){try{return JSON.parse(localStorage.getItem('pp_s'));}catch{return null;}}
+function clearSession(){try{localStorage.removeItem('pp_s');}catch{}}
+
+// ── Init ─────────────────────────────────────────────────
+async function init(){
+  if(SCRIPT_URL==='YOUR_APPS_SCRIPT_URL'){
+    document.getElementById('needs-setup').style.display='block';
+  }
+  // Restore admin session without needing Script URL
+  const sess=loadSession();
+  if(sess&&sess.isAdmin){
+    if(SCRIPT_URL!=='YOUR_APPS_SCRIPT_URL'){
+      try{DB=await api({action:'read'});}catch(e){console.warn('DB load:',e);}
+    }
+    if(!DB){DB={gameState:{phase:'pre',marketOpen:true,countries:[]},accounts:{},players:[],portfolios:{}};}
+    CU=sess;showApp();goAdmin();buildOddsRefTable();return;
+  }
+  if(SCRIPT_URL==='YOUR_APPS_SCRIPT_URL'){buildOddsRefTable();return;}
+  showLoad('Loading game...');
+  try{
+    DB=await api({action:'read'});
+    if(sess&&DB.accounts&&DB.accounts[sess.username]){
+      CU=sess;showApp();return;
+    }
+  }catch(e){console.error('Init:',e);}
+  finally{hideLoad();}
+  buildOddsRefTable();
+}
+
+// ── Auth ─────────────────────────────────────────────────
+function aswitch(t){
+  ['li','rg'].forEach(x=>{
+    document.getElementById('atb-'+x).classList.toggle('on',x===t);
+    document.getElementById('fp-'+x).classList.toggle('on',x===t);
+  });
+  ['ae','as2'].forEach(id=>document.getElementById(id).classList.remove('on'));
+}
+function aerr(m){const e=document.getElementById('ae');e.textContent=m;e.classList.add('on');}
+function aok2(m){const e=document.getElementById('as2');e.textContent=m;e.classList.add('on');}
+
+async function doLogin(){
+  document.getElementById('ae').classList.remove('on');
+  const u=document.getElementById('li-u').value.trim().toLowerCase();
+  const p=document.getElementById('li-p').value;
+  if(!u||!p){aerr('Enter username and password');return;}
+  if(u==='admin'&&p==='admin2026'){
+    showLoad('Loading...');
+    if(SCRIPT_URL!=='YOUR_APPS_SCRIPT_URL'){
+      try{
+        DB=await api({action:'read'});
+      }catch(e){
+        console.warn('DB load failed:',e);
+        showDebug('Admin DB load failed: '+e.message+' — continuing anyway');
+      }
+    }
+    if(!DB){DB={gameState:{phase:'pre',marketOpen:true,countries:[]},accounts:{},players:[],portfolios:{}};}
+    hideLoad();
+    CU={username:'admin',displayName:'Admin',isAdmin:true,password:'admin2026'};
+    saveSession();showApp();goAdmin();return;
+  }
+  showLoad('Signing in...');
+  try{
+    const r=await api({action:'login',username:u,password:p});
+    if(!r.ok){hideLoad();aerr(r.error||'Login failed');return;}
+    DB=await api({action:'read'});
+    hideLoad();
+    CU={username:u,displayName:r.displayName,isAdmin:false,password:p};
+    saveSession();showApp();
+  }catch(e){
+    hideLoad();
+    aerr('Connection error: '+e.message);
+    showDebug('URL tried: '+SCRIPT_URL+'<br>Error: '+e.message+'<br>Check: 1) Script deployed as web app 2) Access set to Anyone 3) URL correct');
+  }
+}
+
+function showDebug(msg){
+  const d=document.getElementById('debug-result');
+  d.innerHTML=msg;d.style.display='block';
+  d.style.background='rgba(74,158,255,0.1)';
+  d.style.border='1px solid rgba(74,158,255,0.3)';
+  d.style.color='#6db8f7';
+}
+
+async function testConnection(){
+  showDebug('Testing connection...');
+  try{
+    const r=await api({action:'read'});
+    if(r.gameState){
+      showDebug('✅ Connection OK — '+r.players.length+' players, '+r.gameState.countries.length+' countries loaded');
+    } else {
+      showDebug('⚠️ Connected but unexpected response: '+JSON.stringify(r).substring(0,200));
+    }
+  }catch(e){
+    showDebug('❌ Failed: '+e.message+'<br><br>Most likely causes:<br>1. Apps Script not deployed yet — go to script.google.com, Deploy → New deployment<br>2. "Who has access" not set to <b>Anyone</b><br>3. Wrong URL copied');
+  }
+}
+
+async function doRegister(){
+  ['ae','as2'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  const name=document.getElementById('rg-n').value.trim();
+  const u=document.getElementById('rg-u').value.trim().toLowerCase();
+  const p=document.getElementById('rg-p').value;
+  if(!name||!u||!p){aerr('Fill in all fields');return;}
+  if(u.length<3){aerr('Username must be 3+ characters');return;}
+  if(p.length<4){aerr('Password must be 4+ characters');return;}
+  if(/[^a-z0-9_]/.test(u)){aerr('Username: letters, numbers, _ only');return;}
+  if(u==='admin'){aerr('That username is reserved');return;}
+  showLoad('Creating account...');
+  try{
+    const r=await api({action:'register',username:u,displayName:name,password:p});
+    if(!r.ok){hideLoad();aerr(r.error||'Registration failed');return;}
+    DB=await api({action:'read'});
+    hideLoad();
+    aok2('Account created! You can now sign in.');
+    aswitch('li');
+    document.getElementById('li-u').value=u;
+  }catch(e){hideLoad();aerr('Connection error: '+e.message);}
+}
+
+async function doLogout(){
+  clearSession();CU=null;
+  ['s-app','s-admin'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  document.getElementById('s-auth').classList.add('on');
+  document.getElementById('li-u').value='';document.getElementById('li-p').value='';
+  ['ae','as2'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  aswitch('li');
+  showLoad('Loading...');try{DB=await api({action:'read'});}catch{}finally{hideLoad();}
+}
+
+// ── Screens ──────────────────────────────────────────────
+function showApp(){
+  document.getElementById('s-auth').classList.remove('on');
+  document.getElementById('s-admin').classList.remove('on');
+  document.getElementById('s-app').classList.add('on');
+  document.getElementById('tb-user').textContent=CU.displayName;
+  document.getElementById('btn-adm').style.display=CU.isAdmin?'inline-flex':'none';
+  renderPhaseBar();renderPortfolio();
+}
+function goAdmin(){
+  document.getElementById('s-app').classList.remove('on');
+  document.getElementById('s-admin').classList.add('on');
+  renderAdmin();buildOddsRefTable();
+}
+function hideAdmin(){
+  document.getElementById('s-admin').classList.remove('on');
+  document.getElementById('s-app').classList.add('on');
+  renderPhaseBar();
+}
+function goTab(name,btn){
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p-'+name).classList.add('on');
+  if(name==='market')renderMarket();
+  if(name==='trade')renderTrade();
+  if(name==='leaderboard')renderLeaderboard();
+  if(name==='portfolio')renderPortfolio();
+}
+
+// ── Helpers ──────────────────────────────────────────────
+function myPort(){return(DB.portfolios&&DB.portfolios[CU.username])||{budget:1000,holdings:{},transactions:[]};}
+function gc(code){return DB.gameState.countries.find(c=>c.code===code);}
+function hv(h){return Object.entries(h||{}).reduce((s,[code,qty])=>{const c=gc(code);return s+(c?c.price*qty:0);},0);}
+function tv(b,h){return b+hv(h);}
+function ac(h){return Object.keys(h||{}).filter(k=>(h[k]||0)>0).length;}
+function f(n){return '£'+Math.round(n).toLocaleString();}
+function fc(n){return(n>=0?'+':'')+f(n);}
+function isPost(){return['groups','r16','quarters','semis','final','complete'].includes(DB.gameState.phase);}
+
+// ── Phase bar ────────────────────────────────────────────
+function renderPhaseBar(){
+  const idx=PHASES.indexOf(DB.gameState.phase);
+  document.getElementById('phase-track').innerHTML=PHASES.map((p,i)=>
+    `<div class="ps ${i<idx?'done':i===idx?'now':''}">${PLABELS[p]}</div>`).join('');
+}
+
+// ── Portfolio ────────────────────────────────────────────
+function renderPortfolio(){
+  const port=myPort(),hhv=hv(port.holdings),tot=port.budget+hhv,pnl=tot-1000;
+  document.getElementById('st-bud').textContent=f(port.budget);
+  document.getElementById('st-hld').textContent=f(hhv);
+  document.getElementById('st-tot').textContent=f(tot);
+  const pe=document.getElementById('st-pnl');
+  pe.textContent=fc(pnl);pe.className='sv '+(pnl>0?'gr':pnl<0?'r':'n');
+  const cb=document.getElementById('cap-badge');
+  if(isPost()){cb.textContent='No country limit';cb.className='badge b-green';}
+  else{cb.textContent=`Pre-tournament: ${ac(port.holdings)}/3`;cb.className='badge b-gold';}
+  const ents=Object.entries(port.holdings||{}).filter(([,q])=>q>0);
+  document.getElementById('hlist').innerHTML=ents.length?ents.map(([code,qty])=>{
+    const c=gc(code);if(!c)return'';
+    const val=c.price*qty,cost=c.base*qty,gain=val-cost;
+    const gp=cost>0?((gain/cost)*100).toFixed(1):0,gcl=gain>0?'up':gain<0?'dn':'fl';
+    return`<div class="hrow"><div class="hleft">
+      <div><div style="font-weight:500;color:var(--t1)${c.elim?';text-decoration:line-through':''}">${flagImg(code)} ${c.name}${c.elim?' ☠':''} <span style="font-size:11px;color:var(--t3)">${qty} share${qty!==1?'s':''}</span></div>
+      <div style="font-size:11px;color:var(--t3);margin-top:2px">${f(c.price)}/share${c.elim?' <b style="color:var(--red)">ELIMINATED</b>':''}</div></div></div>
+      <div style="text-align:right"><div style="font-family:var(--fd);font-size:17px;${c.elim?'color:var(--red)':''}">${f(val)}</div>
+      <div class="${gcl}" style="font-size:11px;margin-top:2px">${fc(gain)} (${gp}%)</div></div></div>`;
+  }).join(''):'<div class="empty">No holdings — go to Trade to buy shares</div>';
+  const txs=(port.transactions||[]).slice().reverse().slice(0,10);
+  document.getElementById('txlist').innerHTML=txs.length?txs.map(tx=>
+    `<div class="txrow"><div class="txl">${flagImg(tx.code)} <b>${tx.action}</b> ${tx.qty}× ${tx.name} @ ${f(tx.price)}</div>
+    <div style="color:${tx.action==='Bought'?'var(--red)':'var(--green)'}">${tx.action==='Bought'?'-':'+'}${f(tx.total)}</div></div>`
+  ).join(''):'<div class="empty">No transactions yet</div>';
+}
+
+// ── Market ───────────────────────────────────────────────
+function renderMarket(){
+  const open=DB.gameState.marketOpen;
+  document.getElementById('mkt-dot').className=open?'wdot':'wdot off';
+  document.getElementById('mkt-banner').className=open?'wbanner open':'wbanner closed';
+  const mktLock=getMatchLockStatus();
+  const mktLockBanner=document.getElementById('mkt-lock-banner');
+  if(mktLockBanner){
+    if(mktLock.locked){
+      mktLockBanner.textContent=mktLock.reason;
+      mktLockBanner.style.display='block';
+      mktLockBanner.style.background='rgba(211,47,47,0.08)';
+      mktLockBanner.style.borderColor='rgba(211,47,47,0.3)';
+      mktLockBanner.style.color='var(--red)';
+    } else { mktLockBanner.style.display='none'; }
+  }
+  const mktEffOpen = open && !mktLock.locked;
+  document.getElementById('mkt-dot').className=mktEffOpen?'wdot':'wdot off';
+  document.getElementById('mkt-banner').className=mktEffOpen?'wbanner open':'wbanner closed';
+  document.getElementById('mkt-txt').innerHTML=mktEffOpen?`<b>Market open</b> — ${PLABELS[DB.gameState.phase]}`:(mktLock.locked?`<b>Market paused</b> — match in progress`:`<b>Market closed</b> — trading paused between stages`);
+  const mine=myPort().holdings||{};
+  // Group by group letter
+  const sorted=[...DB.gameState.countries].sort((a,b)=>{
+    if((a.group||'Z')<(b.group||'Z'))return -1;
+    if((a.group||'Z')>(b.group||'Z'))return 1;
+    return b.price-a.price;
+  });
+  document.getElementById('mkt-tbody').innerHTML=sorted.map(c=>{
+    const owned=mine[c.code]||0,chg=c.price-c.base,cp=c.base>0?((chg/c.base)*100).toFixed(1):0,cc=chg>0?'up':chg<0?'dn':'fl';
+    return`<tr ${c.elim?'style="opacity:.4"':''}><td style="padding-left:14px">
+      <div style="display:flex;align-items:center;gap:7px">
+      <span style="font-weight:500;color:var(--t1)">${flagImg(c.code)}${c.name}</span>
+      ${owned>0?`<span style="font-size:10px;color:var(--green);font-weight:600">${owned} held</span>`:''}</div></td>
+      <td><span style="font-size:11px;background:var(--s3);padding:2px 7px;border-radius:4px;color:var(--t2)">${c.group||'—'}</span></td>
+      <td><div style="font-size:12px">${c.prob}%</div><div class="pbar"><div class="pfill" style="width:${Math.min(c.prob*6,100)}%"></div></div></td>
+      <td><span class="mono">${f(c.price)}</span></td>
+      <td class="${cc} mono">${chg>=0?'+':''}${cp}%</td>
+      <td>${c.elim?'<span class="badge b-red">Out</span>':''}</td>
+      <td style="padding-right:12px">${!c.elim&&open?`<button class="btn btn-xs btn-g" onclick="quickBuy('${c.code}')">Buy</button>`:''}</td></tr>`;
+  }).join('');
+}
+
+// ── Trade ────────────────────────────────────────────────
+function renderTrade(){
+  const open=DB.gameState.marketOpen;
+  // Check match schedule lock
+  const lockStatus = getMatchLockStatus();
+  const matchLockBanner = document.getElementById('match-lock-banner');
+  if(lockStatus.locked){
+    matchLockBanner.textContent = lockStatus.reason;
+    matchLockBanner.style.display = 'block';
+  } else {
+    matchLockBanner.style.display = 'none';
+    // Show next match info if market is open
+    const next = getNextMatch();
+    if(next && open){
+      const koDate = new Date(Date.UTC(
+        parseInt(next.ko.split('T')[0].split('-')[0]),
+        parseInt(next.ko.split('T')[0].split('-')[1])-1,
+        parseInt(next.ko.split('T')[0].split('-')[2]),
+        parseInt(next.ko.split('T')[1].split(':')[0])-1,
+        parseInt(next.ko.split('T')[1].split(':')[1])
+      ));
+      const koStr = koDate.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/London'})
+        + ' ' + koDate.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'});
+      matchLockBanner.innerHTML = `⏱ Next trading pause: <b>${next.label}</b> — ${koStr} BST`;
+      matchLockBanner.style.display = 'block';
+      matchLockBanner.style.background = 'rgba(26,107,58,0.06)';
+      matchLockBanner.style.borderColor = 'rgba(26,107,58,0.25)';
+      matchLockBanner.style.color = 'var(--green)';
+    }
+  }
+  const effectivelyOpen = open && !lockStatus.locked;
+  document.getElementById('trd-dot').className=effectivelyOpen?'wdot':'wdot off';
+  document.getElementById('trd-banner').className=effectivelyOpen?'wbanner open':'wbanner closed';
+  document.getElementById('trd-txt').innerHTML=effectivelyOpen?`<b>Market open</b> — buy and sell freely`:(lockStatus.locked?`<b>Market paused</b> — match in progress`:`<b>Market closed</b> — opens at next stage break`);
+  const prev=document.getElementById('bc').value;
+  document.getElementById('bc').innerHTML='<option value="">— select —</option>'+
+    DB.gameState.countries.filter(c=>!c.elim).sort((a,b)=>b.price-a.price)
+    .map(c=>`<option value="${c.code}">${c.name} (Grp ${c.group||'?'}) — ${f(c.price)}/share</option>`).join('');
+  if(prev)document.getElementById('bc').value=prev;
+  const port=myPort(),prevS=document.getElementById('sc').value;
+  document.getElementById('sc').innerHTML='<option value="">— select —</option>'+
+    Object.entries(port.holdings||{}).filter(([,q])=>q>0).map(([code,qty])=>{
+      const c=gc(code);return`<option value="${code}">${c?.name||code} (${qty}) — ${f(c?.price||0)}/share</option>`;
+    }).join('');
+  if(prevS)document.getElementById('sc').value=prevS;
+  pbuy();psell();
+}
+function quickBuy(code){goTab('trade',document.querySelectorAll('.tabs .tab')[2]);document.getElementById('bc').value=code;pbuy();}
+function pbuy(){
+  const code=document.getElementById('bc').value,qty=parseInt(document.getElementById('bq').value)||0;
+  document.getElementById('berr').textContent='';
+  if(!code||qty<1){document.getElementById('bprev').textContent='';return;}
+  const c=gc(code),port=myPort(),tot=c.price*qty;
+  document.getElementById('bprev').textContent=`Cost: ${f(tot)} · Budget after: ${f(port.budget-tot)}`;
+  if(tot>port.budget)document.getElementById('berr').textContent='Insufficient budget';
+  else if(!isPost()&&!port.holdings[code]&&ac(port.holdings)>=3)document.getElementById('berr').textContent='Max 3 countries pre-tournament';
+}
+function psell(){
+  const code=document.getElementById('sc').value,qty=parseInt(document.getElementById('sq').value)||0;
+  document.getElementById('serr').textContent='';
+  if(!code||qty<1){document.getElementById('sprev').textContent='';return;}
+  const c=gc(code),port=myPort(),held=port.holdings[code]||0;
+  document.getElementById('sprev').textContent=`Receive: ${f(c.price*qty)} · Remaining: ${held-qty} shares`;
+  if(qty>held)document.getElementById('serr').textContent=`Only ${held} share${held!==1?'s':''} held`;
+}
+async function exBuy(){
+    const _lock=getMatchLockStatus();
+  if(!DB.gameState.marketOpen||_lock.locked){toast(_lock.locked?'Trading paused — match in progress':'Market is currently closed','err');return;}
+  const code=document.getElementById('bc').value,qty=parseInt(document.getElementById('bq').value)||0;
+  if(!code){document.getElementById('berr').textContent='Select a country';return;}
+  if(qty<1){document.getElementById('berr').textContent='Enter quantity';return;}
+  const c=gc(code);if(c.elim){document.getElementById('berr').textContent='Cannot buy eliminated country';return;}
+  const port=myPort(),tot=c.price*qty;
+  if(tot>port.budget){document.getElementById('berr').textContent='Insufficient budget';return;}
+  if(!isPost()&&!port.holdings[code]&&ac(port.holdings)>=3){document.getElementById('berr').textContent='Max 3 countries pre-tournament';return;}
+  port.budget-=tot;port.holdings[code]=(port.holdings[code]||0)+qty;
+  port.transactions.push({action:'Bought',name:c.name,flag:c.flag,code,qty,price:c.price,total:tot,ts:Date.now()});
+  DB.portfolios[CU.username]=port;
+  showLoad('Saving...');
+  try{const r=await api({action:'save_portfolio',username:CU.username,password:CU.password,portfolio:JSON.stringify(port)});
+    if(!r.ok){toast('Save failed','err');return;}
+    toast(`Bought ${qty}× ${c.name} for ${f(tot)}`,'ok');renderPortfolio();renderTrade();
+  }catch(e){toast('Connection error','err');}finally{hideLoad();}
+}
+async function exSell(){
+    const _lock=getMatchLockStatus();
+  if(!DB.gameState.marketOpen||_lock.locked){toast(_lock.locked?'Trading paused — match in progress':'Market is currently closed','err');return;}
+  const code=document.getElementById('sc').value,qty=parseInt(document.getElementById('sq').value)||0;
+  if(!code){document.getElementById('serr').textContent='Select a holding';return;}
+  if(qty<1){document.getElementById('serr').textContent='Enter quantity';return;}
+  const port=myPort(),held=port.holdings[code]||0;
+  if(qty>held){document.getElementById('serr').textContent=`Only ${held} held`;return;}
+  const c=gc(code),tot=c.price*qty;
+  port.budget+=tot;port.holdings[code]-=qty;
+  if(port.holdings[code]===0)delete port.holdings[code];
+  port.transactions.push({action:'Sold',name:c.name,flag:c.flag,code,qty,price:c.price,total:tot,ts:Date.now()});
+  DB.portfolios[CU.username]=port;
+  showLoad('Saving...');
+  try{const r=await api({action:'save_portfolio',username:CU.username,password:CU.password,portfolio:JSON.stringify(port)});
+    if(!r.ok){toast('Save failed','err');return;}
+    toast(`Sold ${qty}× ${c.name} for ${f(tot)}`,'ok');renderPortfolio();renderTrade();
+  }catch(e){toast('Connection error','err');}finally{hideLoad();}
+}
+
+// ── Leaderboard ──────────────────────────────────────────
+function renderLeaderboard(){
+  document.getElementById('lb-badge').textContent=PLABELS[DB.gameState.phase];
+  const players=DB.players||[];
+  if(!players.length){document.getElementById('lblist').innerHTML='<div class="empty">No players yet</div>';return;}
+  const rows=players.map(u=>{
+    const p=(DB.portfolios&&DB.portfolios[u])||{budget:1000,holdings:{}};
+    const acc=(DB.accounts&&DB.accounts[u])||{displayName:u};
+    return{u,name:acc.displayName,total:tv(p.budget,p.holdings),holdings:p.holdings};
+  }).sort((a,b)=>b.total-a.total);
+  const rc=['g','s','b'];
+  document.getElementById('lblist').innerHTML=rows.map((r,i)=>{
+    const pnl=r.total-1000,pc=pnl>0?'up':pnl<0?'dn':'fl';
+    const flags=Object.entries(r.holdings||{}).filter(([,q])=>q>0).map(([code])=>{return flagImg(code);}).join('');
+    return`<div class="lbrow">
+      <div class="lbr ${rc[i]||''}">${i+1}</div>
+      <div style="flex:1"><div style="font-weight:500;color:var(--t1)">${r.name}${r.u===CU?.username?'<span style="font-size:10px;color:var(--gold);margin-left:5px">you</span>':''}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:2px">${flags||'No holdings'}</div></div>
+      <div style="text-align:right"><div style="font-family:var(--fd);font-size:19px">${f(r.total)}</div>
+      <div class="${pc}" style="font-size:11px;margin-top:2px">${fc(pnl)}</div></div></div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// ADMIN
+// ════════════════════════════════════════════════════════
+function renderAdmin(){
+  document.getElementById('adm-phase').value=DB.gameState.phase;
+  document.getElementById('adm-mkt').value=DB.gameState.marketOpen?'1':'0';
+  document.getElementById('adm-pgrid').innerHTML=DB.gameState.countries.map(c=>`
+    <div class="pitem">
+      <span class="piname">${flagImg(c.code)}${c.name}<br><span style="font-size:10px;color:var(--t3)">Grp ${c.group||'?'}</span></span>
+      <div>
+        <div style="font-size:9px;color:var(--t3);margin-bottom:2px">prob%</div>
+        <input class="piinp" id="ap-${c.code}" type="number" value="${c.prob}" min="0" max="100" oninput="autoPrice('${c.code}')">
+        <div style="font-size:9px;color:var(--t3);margin:4px 0 2px">price£</div>
+        <input class="piinp" id="ac-${c.code}" type="number" value="${c.price}" min="0">
+      </div>
+    </div>`).join('');
+  document.getElementById('adm-elim').innerHTML=DB.gameState.countries.map(c=>
+    `<button class="btn btn-sm ${c.elim?'btn-r':''}" onclick="admToggleElim('${c.code}')">${flagImg(code)} ${c.name}${c.elim?' ☠':''}</button>`
+  ).join('');
+  renderAdminPlayers();
+}
+
+// Auto-calculate price from prob
+function autoPrice(code){
+  const probEl=document.getElementById('ap-'+code);
+  const priceEl=document.getElementById('ac-'+code);
+  if(probEl&&priceEl){
+    const prob=parseFloat(probEl.value)||0;
+    priceEl.value=Math.round(prob*10);
+  }
+}
+
+function renderAdminPlayers(){
+  const players=DB.players||[];
+  if(!players.length){document.getElementById('adm-ptbl').innerHTML='<tr><td colspan="6" style="color:var(--t3);padding:12px">No players yet</td></tr>';return;}
+  document.getElementById('adm-ptbl').innerHTML=players.map(u=>{
+    const p=(DB.portfolios&&DB.portfolios[u])||{budget:1000,holdings:{}};
+    const acc=(DB.accounts&&DB.accounts[u])||{displayName:u};
+    const hhv=hv(p.holdings);
+    const held=Object.entries(p.holdings||{}).filter(([,q])=>q>0).map(([code,q])=>{const c=gc(code);return c?`${c.flag}${c.name}×${q}`:'';}).join(', ');
+    return`<tr><td style="color:var(--t1)">${acc.displayName}</td><td style="color:var(--t3)">${u}</td>
+      <td class="mono">${f(p.budget)}</td><td class="mono">${f(hhv)}</td>
+      <td class="mono" style="color:var(--gold)">${f(p.budget+hhv)}</td>
+      <td style="font-size:11px;color:var(--t3)">${held||'—'}</td></tr>`;
+  }).join('');
+}
+async function admSavePhase(){
+  DB.gameState.phase=document.getElementById('adm-phase').value;
+  DB.gameState.marketOpen=document.getElementById('adm-mkt').value==='1';
+  showLoad('Saving...');
+  try{const r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(DB.gameState)});
+    if(r.ok){toast('Saved','ok');renderAdmin();}else toast(r.error,'err');
+  }catch(e){toast('Error: '+e.message,'err');}finally{hideLoad();}
+}
+async function admSavePrices(){
+  DB.gameState.countries.forEach(c=>{
+    c.prob=parseFloat(document.getElementById('ap-'+c.code)?.value)||0;
+    c.price=c.elim?0:(parseFloat(document.getElementById('ac-'+c.code)?.value)||0);
+  });
+  showLoad('Saving...');
+  try{const r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(DB.gameState)});
+    if(r.ok){toast('Prices updated and saved','ok');renderAdmin();}else toast(r.error,'err');
+  }catch(e){toast('Error: '+e.message,'err');}finally{hideLoad();}
+}
+async function admToggleElim(code){
+  const c=gc(code);c.elim=!c.elim;if(c.elim)c.price=0;
+  showLoad('Saving...');
+  try{const r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(DB.gameState)});
+    if(r.ok){toast(`${c.name} ${c.elim?'eliminated':'reinstated'}`,'ok');renderAdmin();}else toast(r.error,'err');
+  }catch(e){toast('Error: '+e.message,'err');}finally{hideLoad();}
+}
+
+// ════════════════════════════════════════════════════════
+// ODDS CALCULATOR
+// ════════════════════════════════════════════════════════
+function oddsToProb(fmt, val){
+  val = val.toString().trim();
+  if(fmt==='fractional'){
+    const parts=val.split('/');
+    if(parts.length!==2)return null;
+    const n=parseFloat(parts[0]),d=parseFloat(parts[1]);
+    if(isNaN(n)||isNaN(d)||d===0)return null;
+    return d/(n+d)*100;
+  }
+  if(fmt==='decimal'){
+    const d=parseFloat(val);
+    if(isNaN(d)||d<=1)return null;
+    return (1/d)*100;
+  }
+  if(fmt==='american'){
+    const v=parseFloat(val.replace('+',''));
+    if(isNaN(v))return null;
+    if(v>0) return 100/(v+100)*100;
+    else return Math.abs(v)/(Math.abs(v)+100)*100;
+  }
+  return null;
+}
+
+function calcOdds(){
+  const fmt=document.getElementById('calc-fmt').value;
+  const val=document.getElementById('calc-val').value.trim();
+  const res=document.getElementById('calc-result');
+  if(!val){res.innerHTML='Enter odds above to see the probability and share price';return;}
+  const prob=oddsToProb(fmt,val);
+  if(prob===null){res.innerHTML='<span style="color:var(--red)">Invalid odds format</span>';return;}
+  const price=Math.round(prob*10);
+  res.innerHTML=`Probability: <b>${prob.toFixed(1)}%</b> &nbsp;·&nbsp; Share price: <b>£${price}</b>`;
+}
+
+function buildOddsRefTable(){
+  const examples=[
+    {frac:'1/5',dec:'1.20',am:'-500'},
+    {frac:'1/2',dec:'1.50',am:'-200'},
+    {frac:'1/1',dec:'2.00',am:'+100'},
+    {frac:'2/1',dec:'3.00',am:'+200'},
+    {frac:'5/1',dec:'6.00',am:'+500'},
+    {frac:'10/1',dec:'11.00',am:'+1000'},
+    {frac:'20/1',dec:'21.00',am:'+2000'},
+    {frac:'50/1',dec:'51.00',am:'+5000'},
+  ];
+  document.getElementById('odds-ref-table').innerHTML=examples.map(e=>{
+    const prob=oddsToProb('fractional',e.frac);
+    return`<tr><td>${e.frac}</td><td>${e.dec}</td><td>${e.am}</td><td>${prob.toFixed(1)}%</td><td>£${Math.round(prob*10)}</td></tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// LIVE ODDS FETCHER — uses Anthropic API with web search
+// ════════════════════════════════════════════════════════
+async function fetchLiveOdds(){
+  const btn=document.getElementById('fetch-odds-btn');
+  const status=document.getElementById('odds-status');
+  const stream=document.getElementById('odds-stream');
+  const results=document.getElementById('fetched-results');
+  const applyBtn=document.getElementById('apply-all-btn');
+  if(SCRIPT_URL==='YOUR_APPS_SCRIPT_URL'){
+    status.innerHTML='<span style="color:var(--red)">Set your Apps Script URL first.</span>';
+    return;
+  }
+  btn.disabled=true;
+  btn.textContent='⏳ Fetching...';
+  status.innerHTML='Searching for current World Cup 2026 odds via AI... (15-30 seconds)';
+  stream.classList.remove('on');
+  results.innerHTML='';
+  applyBtn.style.display='none';
+  FETCHED_ODDS=[];
+  try{
+    const r=await api({action:'fetch_and_save_odds'});
+    if(!r.ok){
+      let msg=r.error||'Unknown error';
+      if(msg.includes('API key not set')){
+        msg='Anthropic API key not set in Apps Script. <a href="https://console.anthropic.com" target="_blank" style="color:var(--blue)">Get a free key here</a>, paste it into AppsScript-Backend.js where it says YOUR_ANTHROPIC_API_KEY, then redeploy.';
+      }
+      status.innerHTML='<span style="color:var(--red)">'+msg+'</span>';
+      return;
+    }
+    const matched=r.odds||[];
+    if(!matched.length){status.innerHTML='<span style="color:var(--red)">No odds returned. Try again.</span>';return;}
+    FETCHED_ODDS=matched;
+    status.innerHTML='<b>✓ '+matched.length+' teams updated and saved to Drive.</b> Prices are now live for all players.';
+    applyBtn.style.display='none'; // auto-saved, no manual apply needed
+    results.innerHTML='<div style="margin-top:8px"><table class="tbl" style="font-size:12px">'
+      +'<thead><tr><th>Team</th><th>Odds</th><th>Prob.</th><th>New price</th><th>Current</th><th></th></tr></thead><tbody>'
+      +matched.map(function(m){
+        var cur=gc(m.code);
+        var changed=cur&&cur.price!==m.price;
+        return '<tr>'
+          +'<td>'+flagImg(m.code)+' '+m.name+'</td>'
+          +'<td class="mono">'+(m.odds_fractional||'—')+'</td>'
+          +'<td class="mono">'+m.prob_pct+'%</td>'
+          +'<td class="mono" style="color:var(--green)">£'+m.price+'</td>'
+          +'<td class="mono" style="color:'+(changed?'var(--gold)':'var(--t3)')+'">£'+(cur?cur.price:'—')+'</td>'
+          +'<td><button class="fetched-apply" data-code="'+m.code+'" data-prob="'+m.prob_pct+'" data-price="'+m.price+'" onclick="applyOne(this.dataset.code, parseFloat(this.dataset.prob), parseInt(this.dataset.price))">Apply</button></td>'
+          +'</tr>';
+      }).join('')+'</tbody></table></div>';
+  }catch(e){
+    status.innerHTML='<span style="color:var(--red)">Error: '+e.message+'</span>';
+    console.error(e);
+  }finally{
+    btn.disabled=false;
+    btn.textContent='⚡ Fetch live odds now';
+  }
+}
+
+async function applyOne(code,prob,price){
+  // Update in-memory DB
+  const c=gc(code);
+  if(c){ c.prob=prob; c.price=price; }
+  // Update input fields if visible
+  const probEl=document.getElementById('ap-'+code);
+  const priceEl=document.getElementById('ac-'+code);
+  if(probEl) probEl.value=prob;
+  if(priceEl) priceEl.value=price;
+  // Save to Drive immediately
+  showLoad('Saving...');
+  try{
+    const r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(DB.gameState)});
+    if(r.ok){
+      toast(`✓ ${c?.name||code} → ${prob}% / £${price} saved`,'ok');
+    } else {
+      toast('Save failed: '+(r.error||'unknown'),'err');
+    }
+  }catch(e){toast('Error: '+e.message,'err');}
+  finally{hideLoad();}
+}
+
+async function applyAllFetched(){
+  if(!FETCHED_ODDS.length){toast('No fetched odds to apply','err');return;}
+  // Update the in-memory DB directly
+  FETCHED_ODDS.forEach(o=>{
+    if(o.code){
+      const c=gc(o.code);
+      if(c){
+        c.prob=o.prob_pct;
+        c.price=o.price;
+      }
+      // Also update input fields if visible
+      const probEl=document.getElementById('ap-'+o.code);
+      const priceEl=document.getElementById('ac-'+o.code);
+      if(probEl) probEl.value=o.prob_pct;
+      if(priceEl) priceEl.value=o.price;
+    }
+  });
+  // Save immediately to Drive
+  showLoad('Saving updated odds...');
+  try{
+    const r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(DB.gameState)});
+    if(r.ok){
+      toast(`✓ ${FETCHED_ODDS.length} teams updated and saved`,'ok');
+      renderAdmin();
+    } else {
+      toast('Save failed: '+(r.error||'unknown'),'err');
+    }
+  }catch(e){toast('Error saving: '+e.message,'err');}
+  finally{hideLoad();}
+}
+
+// ── Toast ────────────────────────────────────────────────
+let _tt;
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='on '+type;
+  clearTimeout(_tt);_tt=setTimeout(()=>t.className='',3200);
+}
+
+window.addEventListener('load',init);
+</script>
+
+<!-- Relay iframe: loads Apps Script URL directly (not sandboxed) and bridges messages -->
+<iframe id="pp-relay" style="display:none;width:0;height:0;border:none" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+<script id="relay-loader">
+(function(){
+  // The relay iframe loads a tiny page that fetches the Apps Script and postMessages back
+  // We write it as a blob URL so it runs in its own origin with full fetch access
+  var relayCode = [
+    '<!DOCTYPE html><html><body><script>',
+    'window.addEventListener("message",function(e){',
+    '  var msg;',
+    '  try{msg=typeof e.data==="string"?JSON.parse(e.data):e.data;}catch(ex){return;}',
+    '  if(!msg||!msg.url)return;',
+    '  var rid=msg._pprid;',
+    '  fetch(msg.url,{redirect:"follow"})',
+    '    .then(function(r){return r.text();})',
+    '    .then(function(t){',
+    '      var parsed;',
+    '      try{parsed=JSON.parse(t);}catch(ex){parsed={error:"Bad JSON: "+t.substring(0,100)};}',
+    '      e.source.postMessage(JSON.stringify({_pprid:rid,data:parsed}),"*");',
+    '    })',
+    '    .catch(function(err){',
+    '      e.source.postMessage(JSON.stringify({_pprid:rid,error:err.message}),"*");',
+    '    });',
+    '});',
+    '<\/script></body></html>'
+  ].join('\n');
+  var blob = new Blob([relayCode], {type:'text/html'});
+  var blobUrl = URL.createObjectURL(blob);
+  var relay = document.getElementById('pp-relay');
+  relay.src = blobUrl;
+  relay.onload = function(){ console.log('PP relay ready'); };
+})();
+</script>
+</body>
+</html>
