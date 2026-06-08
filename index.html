@@ -588,52 +588,11 @@ function hideLoad(){document.getElementById('loading').style.display='none';}
 
 // ── API ──────────────────────────────────────────────────
 async function api(params){
-  // Uses a hidden form POST to a hidden iframe — works from any origin, no CORS issues
-  const  = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  return new Promise((resolve, reject) => {
-    const id = 'f' + Date.now();
-    // Create a hidden iframe to receive the response
-    const iframe = document.createElement('iframe');
-    iframe.name = id;
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-    // Create a hidden form targeting that iframe
-    const form = document.createElement('form');
-    form.method = 'GET';
-    form.action = SCRIPT_URL;
-    form.target = id;
-    form.style.display = 'none';
-    Object.entries(params).forEach(([k,v])=>{
-      const inp = document.createElement('input');
-      inp.type = 'hidden';
-      inp.name = k;
-      inp.value = v;
-      form.appendChild(inp);
-    });
-    document.body.appendChild(form);
-    const cleanup = () => {
-      try { document.body.removeChild(iframe); } catch(e){}
-      try { document.body.removeChild(form); } catch(e){}
-    };
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error('Request timed out — check Apps Script is deployed'));
-    }, 45000);
-    iframe.onload = () => {
-      try {
-        const text = iframe.contentDocument.body.innerText || iframe.contentDocument.body.textContent;
-        clearTimeout(timer);
-        cleanup();
-        try { resolve(JSON.parse(text)); }
-        catch(e) { reject(new Error('Bad response: ' + text.substring(0,200))); }
-      } catch(e) {
-        clearTimeout(timer);
-        cleanup();
-        reject(new Error('Could not read response — check Apps Script access is set to Anyone'));
-      }
-    };
-    form.submit();
-  });
+  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  const resp = await fetch(url, {redirect:'follow'});
+  const text = await resp.text();
+  try{ return JSON.parse(text); }
+  catch(e){ throw new Error('Bad response: ' + text.substring(0,200)); }
 }
 
 // ── Session ──────────────────────────────────────────────
