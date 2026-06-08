@@ -588,30 +588,51 @@ function hideLoad(){document.getElementById('loading').style.display='none';}
 
 // ── API ──────────────────────────────────────────────────
 async function api(params){
+  // Uses a hidden form POST to a hidden iframe — works from any origin, no CORS issues
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  // Try fetch with no-cors mode via a relay approach:
-  // We send the request and read via an iframe message bridge
   return new Promise((resolve, reject) => {
-    const rid = 'r' + Date.now() + Math.random().toString(36).slice(2);
-    const timeout = setTimeout(() => {
-      window.removeEventListener('message', handler);
-      reject(new Error('Request timed out after 30s'));
-    }, 30000);
-    function handler(e) {
+    const id = 'f' + Date.now();
+    // Create a hidden iframe to receive the response
+    const iframe = document.createElement('iframe');
+    iframe.name = id;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    // Create a hidden form targeting that iframe
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = SCRIPT_URL;
+    form.target = id;
+    form.style.display = 'none';
+    Object.entries(params).forEach(([k,v])=>{
+      const inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = k;
+      inp.value = v;
+      form.appendChild(inp);
+    });
+    document.body.appendChild(form);
+    const cleanup = () => {
+      try { document.body.removeChild(iframe); } catch(e){}
+      try { document.body.removeChild(form); } catch(e){}
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Request timed out — check Apps Script is deployed'));
+    }, 45000);
+    iframe.onload = () => {
       try {
-        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (d && d._pprid === rid) {
-          clearTimeout(timeout);
-          window.removeEventListener('message', handler);
-          if (d.error) reject(new Error(d.error));
-          else resolve(d.data);
-        }
-      } catch(err) {}
-    }
-    window.addEventListener('message', handler);
-    // Use the relay iframe
-    const relay = document.getElementById('pp-relay');
-    relay.contentWindow.postMessage(JSON.stringify({_pprid: rid, url: url}), '*');
+        const text = iframe.contentDocument.body.innerText || iframe.contentDocument.body.textContent;
+        clearTimeout(timer);
+        cleanup();
+        try { resolve(JSON.parse(text)); }
+        catch(e) { reject(new Error('Bad response: ' + text.substring(0,200))); }
+      } catch(e) {
+        clearTimeout(timer);
+        cleanup();
+        reject(new Error('Could not read response — check Apps Script access is set to Anyone'));
+      }
+    };
+    form.submit();
   });
 }
 
@@ -1239,38 +1260,5 @@ function toast(msg,type='ok'){
 window.addEventListener('load',init);
 </script>
 
-<!-- Relay iframe: loads Apps Script URL directly (not sandboxed) and bridges messages -->
-<iframe id="pp-relay" style="display:none;width:0;height:0;border:none" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-<script id="relay-loader">
-(function(){
-  // The relay iframe loads a tiny page that fetches the Apps Script and postMessages back
-  // We write it as a blob URL so it runs in its own origin with full fetch access
-  var relayCode = [
-    '<!DOCTYPE html><html><body><script>',
-    'window.addEventListener("message",function(e){',
-    '  var msg;',
-    '  try{msg=typeof e.data==="string"?JSON.parse(e.data):e.data;}catch(ex){return;}',
-    '  if(!msg||!msg.url)return;',
-    '  var rid=msg._pprid;',
-    '  fetch(msg.url,{redirect:"follow"})',
-    '    .then(function(r){return r.text();})',
-    '    .then(function(t){',
-    '      var parsed;',
-    '      try{parsed=JSON.parse(t);}catch(ex){parsed={error:"Bad JSON: "+t.substring(0,100)};}',
-    '      e.source.postMessage(JSON.stringify({_pprid:rid,data:parsed}),"*");',
-    '    })',
-    '    .catch(function(err){',
-    '      e.source.postMessage(JSON.stringify({_pprid:rid,error:err.message}),"*");',
-    '    });',
-    '});',
-    '<\/script></body></html>'
-  ].join('\n');
-  var blob = new Blob([relayCode], {type:'text/html'});
-  var blobUrl = URL.createObjectURL(blob);
-  var relay = document.getElementById('pp-relay');
-  relay.src = blobUrl;
-  relay.onload = function(){ console.log('PP relay ready'); };
-})();
-</script>
 </body>
 </html>
