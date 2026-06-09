@@ -390,7 +390,7 @@ html,body{height:100%;background:var(--dark);color:var(--t1);font-family:var(--f
 // ══════════════════════════════════════════════════════════
 //  REPLACE THIS with your Apps Script /exec URL
 // ══════════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzogvZyX9Pd1wWsVOnwXAT-gu-7I_z1s7fA8MiDDiqavjf442cKyrvXEU72GEoj4MVZ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznEWrVXwQGEBbu9BN8CVTxYhcnsWU4RTRO9_ckoGpJfytlSvTFc_K3pXv0yKsAHx6_/exec';
 
 const PHASES  = ['pre','groups','r16','quarters','semis','final','complete'];
 const PLABELS = {pre:'Pre-tournament',groups:'Group stage',r16:'Round of 16',quarters:'Quarters',semis:'Semis',final:'Final',complete:'Complete'};
@@ -588,30 +588,61 @@ function hideLoad(){document.getElementById('loading').style.display='none';}
 
 // ── API ──────────────────────────────────────────────────
 async function api(params){
-  // Google Apps Script JSONP — must use 'prefix' parameter (not 'callback')
-  // as per Google's own documentation. The response wraps JSON as: prefix({...})
-  return new Promise((resolve, reject) => {
-    const fnName = 'pp' + Date.now() + Math.floor(Math.random()*99999);
-    const p = Object.assign({}, params, {prefix: fnName});
-    const url = SCRIPT_URL + '?' + new URLSearchParams(p).toString();
-    const script = document.createElement('script');
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error('Timed out — Apps Script did not respond in 45s'));
-    }, 45000);
-    function cleanup(){
-      if(window[fnName]) delete window[fnName];
-      if(script.parentNode) script.parentNode.removeChild(script);
-      clearTimeout(timer);
+  const WRITE_ACTIONS = ['admin_save','save_portfolio','register','fetch_and_save_odds'];
+  const isWrite = WRITE_ACTIONS.includes(params.action);
+
+  if(params.action === 'read' || params.action === 'login'){
+    // Reads and login use direct Drive file URL — no CORS issues on public files
+    const driveUrl = 'https://www.googleapis.com/drive/v3/files/'
+      + DRIVE_FILE_ID + '?alt=media&key=' + DRIVE_API_KEY;
+    try {
+      const r = await fetch(driveUrl);
+      if(!r.ok) throw new Error('Drive read failed: '+r.status);
+      const db = await r.json();
+      if(params.action === 'login'){
+        const u = params.username.toLowerCase().trim();
+        const p = params.password;
+        if(!db.accounts[u]) return {ok:false,error:'Username not found'};
+        if(db.accounts[u].password!==p) return {ok:false,error:'Incorrect password'};
+        return {ok:true,displayName:db.accounts[u].displayName};
+      }
+      return db;
+    } catch(e){ throw new Error('Cannot read game data: '+e.message); }
+  }
+
+  if(isWrite){
+    // Writes go to Apps Script via no-cors POST
+    // no-cors means we can't read the response — but it does send the data
+    const body = new URLSearchParams(params).toString();
+    try {
+      await fetch(SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: body
+      });
+    } catch(e){ /* no-cors always throws — ignore */ }
+    // Wait then re-read from Drive to confirm the change saved
+    await new Promise(r=>setTimeout(r,2000));
+    const driveUrl = 'https://www.googleapis.com/drive/v3/files/'
+      + DRIVE_FILE_ID + '?alt=media&key=' + DRIVE_API_KEY;
+    const verify = await fetch(driveUrl);
+    if(verify.ok){
+      const db = await verify.json();
+      return {ok:true, _db:db};
     }
-    window[fnName] = function(data){
-      cleanup();
-      resolve(data);
-    };
-    script.onerror = function(){
-      cleanup();
-      reject(new Error('Script load failed — check Apps Script URL and deployment'));
-    };
+    return {ok:true};
+  }
+
+  // Fallback: JSONP for any other actions
+  return new Promise((resolve,reject)=>{
+    const fn = 'pp'+Date.now()+Math.floor(Math.random()*99999);
+    const p = Object.assign({},params,{callback:fn});
+    const url = SCRIPT_URL+'?'+new URLSearchParams(p).toString();
+    const script = document.createElement('script');
+    const timer = setTimeout(()=>{ cleanup(); reject(new Error('Timed out')); },30000);
+    function cleanup(){ delete window[fn]; if(script.parentNode)script.remove(); clearTimeout(timer); }
+    window[fn] = d=>{ cleanup(); resolve(d); };
+    script.onerror = ()=>{ cleanup(); reject(new Error('Script failed')); };
     script.src = url;
     document.head.appendChild(script);
   });
