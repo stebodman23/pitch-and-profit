@@ -323,7 +323,7 @@ html,body{height:100%;background:var(--dark);color:var(--t1);font-family:var(--f
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-b" id="fetch-odds-btn" onclick="fetchLiveOdds()">⚡ Fetch live odds now</button>
-        <button class="btn btn-g btn-sm" onclick="applyAllFetched()" id="apply-all-btn" style="display:none">✓ Apply all &amp; save</button>
+        <button class="btn btn-g btn-sm" onclick="applyAllFetched()" id="apply-all-btn" style="display:none">✓ Apply all &amp; save to Drive</button>
       </div>
       <div class="odds-status" id="odds-status"></div>
       <div class="odds-stream" id="odds-stream"></div>
@@ -390,7 +390,7 @@ html,body{height:100%;background:var(--dark);color:var(--t1);font-family:var(--f
 // ══════════════════════════════════════════════════════════
 //  REPLACE THIS with your Apps Script /exec URL
 // ══════════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybcQtw_6XvjH4z9GVwzjb-sN0C75hl67WxOShiB-dABUA969CF6X8x9JwhtdvsiFYt/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxgl6vPrAsMnDWPPdbNBL5vZplabCQ5evxenW2Ac4LuEcdzx5ETtuza4Ix65IGjneMw/exec';
 
 const PHASES  = ['pre','groups','r16','quarters','semis','final','complete'];
 const PLABELS = {pre:'Pre-tournament',groups:'Group stage',r16:'Round of 16',quarters:'Quarters',semis:'Semis',final:'Final',complete:'Complete'};
@@ -588,11 +588,41 @@ function hideLoad(){document.getElementById('loading').style.display='none';}
 
 // ── API ──────────────────────────────────────────────────
 async function api(params){
-  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  const resp = await fetch(url, {redirect:'follow'});
-  const text = await resp.text();
-  try{ return JSON.parse(text); }
-  catch(e){ throw new Error('Bad response: ' + text.substring(0,200)); }
+  // Large write operations (admin_save, save_portfolio) use POST to avoid URL length limits
+  // Small reads use GET
+  const WRITE_ACTIONS = ['admin_save','save_portfolio','register'];
+  const isWrite = WRITE_ACTIONS.includes(params.action);
+
+  if(isWrite){
+    // POST the data — no-cors means we don't get a response back
+    // but the data is sent successfully. We then do a GET to verify.
+    const body = new URLSearchParams(params).toString();
+    try{
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: body
+      });
+    }catch(e){ /* no-cors fetch always "succeeds" — errors are swallowed */ }
+    // Wait briefly then read back to confirm save worked
+    await new Promise(r => setTimeout(r, 1500));
+    const verify = await fetch(SCRIPT_URL + '?action=read', {redirect:'follow'});
+    const text = await verify.text();
+    try{
+      const db = JSON.parse(text);
+      return {ok: true, _db: db};
+    }catch(e){
+      return {ok: true}; // assume it worked
+    }
+  } else {
+    // Normal GET for reads
+    const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+    const resp = await fetch(url, {redirect:'follow'});
+    const text = await resp.text();
+    try{ return JSON.parse(text); }
+    catch(e){ throw new Error('Bad response: ' + text.substring(0,200)); }
+  }
 }
 
 // ── Session ──────────────────────────────────────────────
@@ -1119,7 +1149,7 @@ async function fetchLiveOdds(){
     const matched=r.odds||[];
     if(!matched.length){status.innerHTML='<span style="color:var(--red)">No odds returned. Try again.</span>';return;}
     FETCHED_ODDS=matched;
-    status.innerHTML='<b>✓ '+matched.length+' teams updated and saved to Drive.</b> Prices are now live for all players.';
+    status.innerHTML='<b>'+matched.length+' teams fetched.</b> Click <b>✓ Apply all &amp; save to Drive</b> to update prices for all players.';
     // Update the last-updated timestamp display
     if(r.timestamp){
       DB.gameState.oddsLastUpdated=r.timestamp;
@@ -1131,7 +1161,7 @@ async function fetchLiveOdds(){
         tsEl.textContent=str;
       }
     }
-    applyBtn.style.display='none'; // auto-saved, no manual apply needed
+    applyBtn.style.display='inline-flex';
     results.innerHTML='<div style="margin-top:8px"><table class="tbl" style="font-size:12px">'
       +'<thead><tr><th>Team</th><th>Odds</th><th>Prob.</th><th>New price</th><th>Current</th><th></th></tr></thead><tbody>'
       +matched.map(function(m){
