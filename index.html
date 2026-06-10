@@ -594,7 +594,7 @@ async function api(params){
   // Reads + fetch_and_save_odds use Drive API + JSONP (we need the response back)
   // Pure writes (save_portfolio, admin_save, register) use no-cors POST then re-read Drive
 
-  const PURE_WRITES = ['admin_save','save_portfolio','register'];
+  const PURE_WRITES = ['admin_save','save_portfolio','register','fetch_and_save_odds'];
   const isPureWrite = PURE_WRITES.includes(params.action);
 
   // ── PURE WRITES: no-cors POST (fire & confirm via Drive re-read) ──────────
@@ -1153,68 +1153,105 @@ function oddsToProb(fmt, val){
 // LIVE ODDS FETCHER — uses Anthropic API with web search
 // ════════════════════════════════════════════════════════
 async function fetchLiveOdds(){
-  const btn=document.getElementById('fetch-odds-btn');
-  const status=document.getElementById('odds-status');
-  const stream=document.getElementById('odds-stream');
-  const results=document.getElementById('fetched-results');
-  const applyBtn=document.getElementById('apply-all-btn');
-  if(SCRIPT_URL==='YOUR_APPS_SCRIPT_URL'){
-    status.innerHTML='<span style="color:var(--red)">Set your Apps Script URL first.</span>';
-    return;
-  }
-  btn.disabled=true;
-  btn.textContent='⏳ Fetching...';
-  status.innerHTML='Searching for current World Cup 2026 odds via AI... (15-30 seconds)';
-  stream.classList.remove('on');
-  results.innerHTML='';
-  applyBtn.style.display='none';
-  FETCHED_ODDS=[];
+  const btn      = document.getElementById('fetch-odds-btn');
+  const status   = document.getElementById('odds-status');
+  const results  = document.getElementById('fetched-results');
+  const applyBtn = document.getElementById('apply-all-btn');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Fetching...';
+  status.innerHTML = 'Contacting odds server...';
+  results.innerHTML = '';
+  applyBtn.style.display = 'none';
+  FETCHED_ODDS = [];
+
   try{
-    const r=await api({action:'fetch_and_save_odds'});
-    if(!r.ok){
-      let msg=r.error||'Unknown error';
-      if(msg.includes('API key not set')){
-        msg='Anthropic API key not set in Apps Script. <a href="https://console.anthropic.com" target="_blank" style="color:var(--blue)">Get a free key here</a>, paste it into AppsScript-Backend.js where it says YOUR_ANTHROPIC_API_KEY, then redeploy.';
+    // Step 1: Tell Apps Script to fetch odds and save to Drive (no-cors POST — fire & forget)
+    const body = new URLSearchParams({action:'fetch_and_save_odds'}).toString();
+    try{
+      await fetch(SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: body
+      });
+    }catch(e){ /* no-cors always "throws" but the request was sent */ }
+
+    // Step 2: Wait for Apps Script to finish (it takes ~3-5 seconds to fetch & save)
+    status.innerHTML = 'Odds server working... waiting for results (this takes ~10 seconds)';
+    await new Promise(r => setTimeout(r, 10000));
+
+    // Step 3: Re-read Drive file directly — this gives us the updated prices
+    status.innerHTML = 'Reading updated prices from Drive...';
+    const driveUrl = 'https://www.googleapis.com/drive/v3/files/'
+      + DRIVE_FILE_ID + '?alt=media&key=' + DRIVE_API_KEY;
+    const dr = await fetch(driveUrl);
+    if(!dr.ok) throw new Error('Could not read Drive file: '+dr.status+' — make sure the file is shared as Anyone with the link');
+    const newDB = await dr.json();
+
+    // Step 4: Compare new prices to old prices and show what changed
+    const matched = [];
+    newDB.gameState.countries.forEach(function(newC){
+      const oldC = gc(newC.code);
+      if(newC.price > 0 && !newC.elim){
+        matched.push({
+          code: newC.code,
+          flag: newC.flag,
+          name: newC.name,
+          prob_pct: newC.prob,
+          price: newC.price,
+          oldPrice: oldC ? oldC.price : newC.price,
+          odds_fractional: ''
+        });
       }
-      status.innerHTML='<span style="color:var(--red)">'+msg+'</span>';
+    });
+    matched.sort(function(a,b){ return b.prob_pct - a.prob_pct; });
+
+    if(!matched.length){
+      status.innerHTML = '<span style="color:var(--red)">No odds data found. Run testOddsFetch() in Apps Script editor to diagnose.</span>';
       return;
     }
-    const matched=r.odds||[];
-    if(!matched.length){status.innerHTML='<span style="color:var(--red)">No odds returned. Try again.</span>';return;}
-    FETCHED_ODDS=matched;
-    status.innerHTML='<b>'+matched.length+' teams fetched.</b> Click <b>✓ Apply all &amp; save to Drive</b> to update prices for all players.';
-    // Update the last-updated timestamp display
-    if(r.timestamp){
-      DB.gameState.oddsLastUpdated=r.timestamp;
-      const tsEl=document.getElementById('odds-ts');
-      if(tsEl){
-        const d=new Date(r.timestamp);
-        const str=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'Europe/London'})
-          +' at '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'})+' BST';
-        tsEl.textContent=str;
-      }
+
+    // Update our local DB with the new data
+    DB = newDB;
+    FETCHED_ODDS = matched;
+
+    // Show timestamp
+    if(newDB.gameState.oddsLastUpdated){
+      const d = new Date(newDB.gameState.oddsLastUpdated);
+      const str = d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'Europe/London'})
+        +' at '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'})+' BST';
+      const tsEl = document.getElementById('odds-ts');
+      if(tsEl) tsEl.textContent = str;
     }
-    applyBtn.style.display='inline-flex';
-    results.innerHTML='<div style="margin-top:8px"><table class="tbl" style="font-size:12px">'
-      +'<thead><tr><th>Team</th><th>Odds</th><th>Prob.</th><th>New price</th><th>Current</th><th></th></tr></thead><tbody>'
+
+    status.innerHTML = '<b>✓ '+matched.length+' teams updated.</b> Prices are now live for all players.';
+    applyBtn.style.display = 'none'; // already saved — no apply needed
+
+    // Show results table
+    results.innerHTML = '<div style="margin-top:8px"><table class="tbl" style="font-size:13px">'
+      +'<thead><tr><th>Team</th><th>Probability</th><th>New price</th><th>Previous</th><th>Change</th></tr></thead><tbody>'
       +matched.map(function(m){
-        var cur=gc(m.code);
-        var changed=cur&&cur.price!==m.price;
+        const diff = m.price - m.oldPrice;
+        const diffStr = diff===0 ? '—' : (diff>0?'+':'')+'£'+diff;
+        const diffCol = diff>0?'var(--green)':diff<0?'var(--red)':'var(--t3)';
         return '<tr>'
           +'<td>'+flagImg(m.code)+' '+m.name+'</td>'
-          +'<td class="mono">'+(m.odds_fractional||'—')+'</td>'
           +'<td class="mono">'+m.prob_pct+'%</td>'
           +'<td class="mono" style="color:var(--green)">£'+m.price+'</td>'
-          +'<td class="mono" style="color:'+(changed?'var(--gold)':'var(--t3)')+'">£'+(cur?cur.price:'—')+'</td>'
-          +'<td><button class="fetched-apply" data-code="'+m.code+'" data-prob="'+m.prob_pct+'" data-price="'+m.price+'" onclick="applyOne(this.dataset.code, parseFloat(this.dataset.prob), parseInt(this.dataset.price))">Apply</button></td>'
+          +'<td class="mono" style="color:var(--t3)">£'+m.oldPrice+'</td>'
+          +'<td class="mono" style="color:'+diffCol+'">'+diffStr+'</td>'
           +'</tr>';
       }).join('')+'</tbody></table></div>';
+
+    // Re-render admin panel with new prices
+    renderAdmin();
+
   }catch(e){
-    status.innerHTML='<span style="color:var(--red)">Error: '+e.message+'</span>';
+    status.innerHTML = '<span style="color:var(--red)">Error: '+e.message+'</span>';
     console.error(e);
   }finally{
-    btn.disabled=false;
-    btn.textContent='⚡ Fetch live odds now';
+    btn.disabled = false;
+    btn.textContent = '⚡ Fetch live odds now';
   }
 }
 
