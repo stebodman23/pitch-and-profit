@@ -1160,13 +1160,16 @@ async function fetchLiveOdds(){
 
   btn.disabled = true;
   btn.textContent = '⏳ Fetching...';
-  status.innerHTML = 'Contacting odds server...';
   results.innerHTML = '';
   applyBtn.style.display = 'none';
   FETCHED_ODDS = [];
 
+  // Record the current timestamp before we trigger the update
+  const oldTimestamp = DB.gameState.oddsLastUpdated || '';
+
   try{
-    // Step 1: Tell Apps Script to fetch odds and save to Drive (no-cors POST — fire & forget)
+    // Step 1: Fire no-cors POST to trigger server-side odds fetch + save
+    status.innerHTML = '📡 Triggering odds update on server...';
     const body = new URLSearchParams({action:'fetch_and_save_odds'}).toString();
     try{
       await fetch(SCRIPT_URL, {
@@ -1174,48 +1177,89 @@ async function fetchLiveOdds(){
         headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body: body
       });
-    }catch(e){ /* no-cors always "throws" but the request was sent */ }
+    }catch(e){ /* expected with no-cors */ }
 
-    // Step 2: Wait for Apps Script to finish (it takes ~3-5 seconds to fetch & save)
-    status.innerHTML = 'Odds server working... waiting for results (this takes ~10 seconds)';
-    await new Promise(r => setTimeout(r, 10000));
-
-    // Step 3: Re-read Drive file directly — this gives us the updated prices
-    status.innerHTML = 'Reading updated prices from Drive...';
+    // Step 2: Poll Drive every 3 seconds for up to 45 seconds
+    // waiting for the timestamp to change (confirming save completed)
     const driveUrl = 'https://www.googleapis.com/drive/v3/files/'
       + DRIVE_FILE_ID + '?alt=media&key=' + DRIVE_API_KEY;
-    const dr = await fetch(driveUrl);
-    if(!dr.ok) throw new Error('Could not read Drive file: '+dr.status+' — make sure the file is shared as Anyone with the link');
-    const newDB = await dr.json();
 
-    // Step 4: Compare new prices to old prices and show what changed
+    let newDB = null;
+    let attempts = 0;
+    const maxAttempts = 15; // 15 × 3s = 45s max
+
+    while(attempts < maxAttempts){
+      attempts++;
+      const secs = attempts * 3;
+      status.innerHTML = '⏳ Waiting for server to complete... ('+secs+'s)';
+      await new Promise(r => setTimeout(r, 3000));
+
+      try{
+        const dr = await fetch(driveUrl + '&t=' + Date.now()); // cache-bust
+        if(!dr.ok){
+          status.innerHTML = '<span style="color:var(--red)">Cannot read Drive file ('+dr.status+'). Make sure pitch-and-profit-db.json is shared as "Anyone with the link — Viewer".</span>';
+          return;
+        }
+        const candidate = await dr.json();
+        const newTs = candidate.gameState.oddsLastUpdated || '';
+
+        // Check if timestamp changed — means Apps Script finished saving
+        if(newTs && newTs !== oldTimestamp){
+          newDB = candidate;
+          break;
+        }
+        // Also check if any price changed (in case timestamp wasn't saved before)
+        if(attempts >= 5 && candidate.gameState.countries){
+          const changed = candidate.gameState.countries.some(function(c){
+            const old = gc(c.code);
+            return old && c.price !== old.price;
+          });
+          if(changed){ newDB = candidate; break; }
+        }
+      }catch(e){ console.warn('Poll attempt '+attempts+' failed:', e.message); }
+    }
+
+    if(!newDB){
+      // Last resort — just use whatever Drive has now even if timestamp didn't change
+      status.innerHTML = '⚠️ Server may still be processing. Reading Drive now...';
+      try{
+        const dr = await fetch(driveUrl + '&t=' + Date.now());
+        if(dr.ok) newDB = await dr.json();
+      }catch(e){}
+    }
+
+    if(!newDB){
+      status.innerHTML = '<span style="color:var(--red)">Could not read updated data from Drive. Check the file is shared publicly.</span>';
+      return;
+    }
+
+    // Step 3: Build results table comparing new vs old prices
     const matched = [];
     newDB.gameState.countries.forEach(function(newC){
-      const oldC = gc(newC.code);
       if(newC.price > 0 && !newC.elim){
+        const oldC = gc(newC.code);
         matched.push({
-          code: newC.code,
-          flag: newC.flag,
-          name: newC.name,
+          code:  newC.code,
+          flag:  newC.flag,
+          name:  newC.name,
           prob_pct: newC.prob,
           price: newC.price,
-          oldPrice: oldC ? oldC.price : newC.price,
-          odds_fractional: ''
+          oldPrice: oldC ? oldC.price : newC.price
         });
       }
     });
     matched.sort(function(a,b){ return b.prob_pct - a.prob_pct; });
 
     if(!matched.length){
-      status.innerHTML = '<span style="color:var(--red)">No odds data found. Run testOddsFetch() in Apps Script editor to diagnose.</span>';
+      status.innerHTML = '<span style="color:var(--red)">Drive file was read but no team prices found. Check Apps Script is saving correctly — run dailyOddsUpdate() in the editor.</span>';
       return;
     }
 
-    // Update our local DB with the new data
+    // Update local DB
     DB = newDB;
     FETCHED_ODDS = matched;
 
-    // Show timestamp
+    // Update last-updated display
     if(newDB.gameState.oddsLastUpdated){
       const d = new Date(newDB.gameState.oddsLastUpdated);
       const str = d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'Europe/London'})
@@ -1224,27 +1268,28 @@ async function fetchLiveOdds(){
       if(tsEl) tsEl.textContent = str;
     }
 
-    status.innerHTML = '<b>✓ '+matched.length+' teams updated.</b> Prices are now live for all players.';
-    applyBtn.style.display = 'none'; // already saved — no apply needed
+    const changedCount = matched.filter(function(m){ return m.price !== m.oldPrice; }).length;
+    status.innerHTML = '<b style="color:var(--green)">✓ '+matched.length+' teams loaded'
+      +(changedCount?' — '+changedCount+' prices changed':' — prices up to date')+'.</b>';
 
     // Show results table
-    results.innerHTML = '<div style="margin-top:8px"><table class="tbl" style="font-size:13px">'
-      +'<thead><tr><th>Team</th><th>Probability</th><th>New price</th><th>Previous</th><th>Change</th></tr></thead><tbody>'
+    results.innerHTML = '<div style="margin-top:10px"><table class="tbl" style="font-size:13px">'
+      +'<thead><tr><th>Team</th><th>Prob.</th><th>Price</th><th>Previous</th><th>Change</th></tr></thead><tbody>'
       +matched.map(function(m){
         const diff = m.price - m.oldPrice;
-        const diffStr = diff===0 ? '—' : (diff>0?'+':'')+'£'+diff;
+        const diffStr = diff===0?'—':(diff>0?'+':'')+'£'+Math.abs(diff);
         const diffCol = diff>0?'var(--green)':diff<0?'var(--red)':'var(--t3)';
         return '<tr>'
           +'<td>'+flagImg(m.code)+' '+m.name+'</td>'
           +'<td class="mono">'+m.prob_pct+'%</td>'
-          +'<td class="mono" style="color:var(--green)">£'+m.price+'</td>'
+          +'<td class="mono" style="color:var(--green);font-weight:600">£'+m.price+'</td>'
           +'<td class="mono" style="color:var(--t3)">£'+m.oldPrice+'</td>'
-          +'<td class="mono" style="color:'+diffCol+'">'+diffStr+'</td>'
+          +'<td class="mono" style="color:'+diffCol+';font-weight:'+(diff!==0?'600':'400')+'">'+diffStr+'</td>'
           +'</tr>';
       }).join('')+'</tbody></table></div>';
 
-    // Re-render admin panel with new prices
     renderAdmin();
+    renderPhaseBar();
 
   }catch(e){
     status.innerHTML = '<span style="color:var(--red)">Error: '+e.message+'</span>';
