@@ -390,7 +390,7 @@ html,body{height:100%;background:var(--dark);color:var(--t1);font-family:var(--f
 // ══════════════════════════════════════════════════════════
 //  REPLACE THIS with your Apps Script /exec URL
 // ══════════════════════════════════════════════════════════
-const SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbwSDgchMFeLBeGftCOVHfsm64RKSVu2-SudQggZx4bvD-b6f23yDn-VlJczBEUo3hWf/exec';
+const SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbxUZVQToVxrPFir4xLjmM9zWjWBwozyCmAHqou2nuKTvJmkWXLPwckAkiWotKBgfKU/exec';
 const DRIVE_FILE_ID = '1r7kJ_zrzzk9cvmSEgzFmU2dRmgKiRG62';
 const DRIVE_API_KEY = 'AIzaSyBDHkbGFDWXVGyQ9CNFCF0xZ0YBkycxjiM';
 
@@ -590,61 +590,69 @@ function hideLoad(){document.getElementById('loading').style.display='none';}
 
 // ── API ──────────────────────────────────────────────────
 async function api(params){
-  const WRITE_ACTIONS = ['admin_save','save_portfolio','register','fetch_and_save_odds'];
-  const isWrite = WRITE_ACTIONS.includes(params.action);
+  // Determine how to send this request
+  // Reads + fetch_and_save_odds use Drive API + JSONP (we need the response back)
+  // Pure writes (save_portfolio, admin_save, register) use no-cors POST then re-read Drive
 
-  if(params.action === 'read' || params.action === 'login'){
-    // Reads and login use direct Drive file URL — no CORS issues on public files
-    const driveUrl = 'https://www.googleapis.com/drive/v3/files/'
-      + DRIVE_FILE_ID + '?alt=media&key=' + DRIVE_API_KEY;
-    try {
-      const r = await fetch(driveUrl);
-      if(!r.ok) throw new Error('Drive read failed: '+r.status);
-      const db = await r.json();
-      if(params.action === 'login'){
-        const u = params.username.toLowerCase().trim();
-        const p = params.password;
-        if(!db.accounts[u]) return {ok:false,error:'Username not found'};
-        if(db.accounts[u].password!==p) return {ok:false,error:'Incorrect password'};
-        return {ok:true,displayName:db.accounts[u].displayName};
-      }
-      return db;
-    } catch(e){ throw new Error('Cannot read game data: '+e.message); }
-  }
+  const PURE_WRITES = ['admin_save','save_portfolio','register'];
+  const isPureWrite = PURE_WRITES.includes(params.action);
 
-  if(isWrite){
-    // Writes go to Apps Script via no-cors POST
-    // no-cors means we can't read the response — but it does send the data
+  // ── PURE WRITES: no-cors POST (fire & confirm via Drive re-read) ──────────
+  if(isPureWrite){
     const body = new URLSearchParams(params).toString();
-    try {
+    try{
       await fetch(SCRIPT_URL, {
         method:'POST', mode:'no-cors',
         headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body: body
       });
-    } catch(e){ /* no-cors always throws — ignore */ }
-    // Wait then re-read from Drive to confirm the change saved
+    }catch(e){ /* no-cors always throws — data was still sent */ }
+    // Wait 2s then re-read Drive to confirm
     await new Promise(r=>setTimeout(r,2000));
-    const driveUrl = 'https://www.googleapis.com/drive/v3/files/'
-      + DRIVE_FILE_ID + '?alt=media&key=' + DRIVE_API_KEY;
-    const verify = await fetch(driveUrl);
-    if(verify.ok){
-      const db = await verify.json();
-      return {ok:true, _db:db};
-    }
+    try{
+      const driveUrl = 'https://www.googleapis.com/drive/v3/files/'
+        + DRIVE_FILE_ID + '?alt=media&key=' + DRIVE_API_KEY;
+      const vr = await fetch(driveUrl);
+      if(vr.ok){ const db = await vr.json(); return {ok:true, _db:db}; }
+    }catch(e){}
     return {ok:true};
   }
 
-  // Fallback: JSONP for any other actions
+  // ── READS + fetch_and_save_odds: try Drive API first, fall back to JSONP ──
+  if(params.action === 'read'){
+    const driveUrl = 'https://www.googleapis.com/drive/v3/files/'
+      + DRIVE_FILE_ID + '?alt=media&key=' + DRIVE_API_KEY;
+    const r = await fetch(driveUrl);
+    if(!r.ok) throw new Error('Drive read failed: ' + r.status);
+    return r.json();
+  }
+
+  if(params.action === 'login'){
+    const driveUrl = 'https://www.googleapis.com/drive/v3/files/'
+      + DRIVE_FILE_ID + '?alt=media&key=' + DRIVE_API_KEY;
+    const r = await fetch(driveUrl);
+    if(!r.ok) throw new Error('Drive read failed: '+r.status);
+    const db = await r.json();
+    const u = (params.username||'').toLowerCase().trim();
+    const p = params.password||'';
+    if(!db.accounts[u]) return {ok:false,error:'Username not found'};
+    if(db.accounts[u].password!==p) return {ok:false,error:'Incorrect password'};
+    return {ok:true, displayName:db.accounts[u].displayName};
+  }
+
+  // ── ALL OTHER ACTIONS (fetch_and_save_odds etc): JSONP via script tag ─────
   return new Promise((resolve,reject)=>{
     const fn = 'pp'+Date.now()+Math.floor(Math.random()*99999);
     const p = Object.assign({},params,{callback:fn});
     const url = SCRIPT_URL+'?'+new URLSearchParams(p).toString();
     const script = document.createElement('script');
-    const timer = setTimeout(()=>{ cleanup(); reject(new Error('Timed out')); },30000);
+    const timer = setTimeout(()=>{
+      cleanup();
+      reject(new Error('Timed out — Apps Script did not respond'));
+    },45000);
     function cleanup(){ delete window[fn]; if(script.parentNode)script.remove(); clearTimeout(timer); }
-    window[fn] = d=>{ cleanup(); resolve(d); };
-    script.onerror = ()=>{ cleanup(); reject(new Error('Script failed')); };
+    window[fn] = function(data){ cleanup(); resolve(data); };
+    script.onerror = function(){ cleanup(); reject(new Error('Script load failed')); };
     script.src = url;
     document.head.appendChild(script);
   });
