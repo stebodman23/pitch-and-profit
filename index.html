@@ -531,7 +531,7 @@ function getMatchLockStatus() {
       parseInt(timeParts[1])
     );
     const koMs = koUTC;
-    const unlockMs = koMs + (3 * 60 * 60 * 1000); // 3 hours after KO
+    const unlockMs = koMs + (2 * 60 * 60 * 1000); // 2 hours after KO
     const nowMs = now.getTime();
 
     if (nowMs >= koMs && nowMs <= unlockMs) {
