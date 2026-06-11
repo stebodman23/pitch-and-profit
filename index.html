@@ -1064,7 +1064,7 @@ function renderAdmin(){
       </div>
     </div>`).join('');
   document.getElementById('adm-elim').innerHTML=DB.gameState.countries.map(c=>
-    `<button class="btn btn-sm ${c.elim?'btn-r':''}" onclick="admToggleElim('${c.code}')">${flagImg(code)} ${c.name}${c.elim?' ☠':''}</button>`
+    `<button class="btn btn-sm ${c.elim?'btn-r':''}" onclick="admToggleElim('${c.code}')">${flagImg(c.code)} ${c.name}${c.elim?' ☠':''}</button>`
   ).join('');
   renderAdminPlayers();
 }
@@ -1097,25 +1097,54 @@ async function admSavePhase(){
   DB.gameState.phase=document.getElementById('adm-phase').value;
   DB.gameState.marketOpen=document.getElementById('adm-mkt').value==='1';
   showLoad('Saving...');
-  try{const r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(DB.gameState)});
-    if(r.ok){toast('Saved','ok');renderAdmin();}else toast(r.error,'err');
+  try{
+    var gsToSend = JSON.parse(JSON.stringify(DB.gameState));
+    gsToSend.countries = gsToSend.countries.map(function(c){
+      return {code:c.code,name:c.name,group:c.group,prob:c.prob,price:c.price,base:c.base,elim:c.elim};
+    });
+    var r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(gsToSend)});
+    if(r&&r.ok){toast('Settings saved','ok');renderAdmin();}else toast((r&&r.error)||'Save failed','err');
   }catch(e){toast('Error: '+e.message,'err');}finally{hideLoad();}
 }
 async function admSavePrices(){
-  DB.gameState.countries.forEach(c=>{
-    c.prob=parseFloat(document.getElementById('ap-'+c.code)?.value)||0;
-    c.price=c.elim?0:(parseFloat(document.getElementById('ac-'+c.code)?.value)||0);
+  // Read values from input fields into DB
+  DB.gameState.countries.forEach(function(country){
+    var probEl  = document.getElementById('ap-'+country.code);
+    var priceEl = document.getElementById('ac-'+country.code);
+    if(probEl)  country.prob  = parseFloat(probEl.value)  || 0;
+    if(priceEl) country.price = country.elim ? 0 : (parseFloat(priceEl.value) || 0);
   });
   showLoad('Saving...');
-  try{const r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(DB.gameState)});
-    if(r.ok){toast('Prices updated and saved','ok');renderAdmin();}else toast(r.error,'err');
-  }catch(e){toast('Error: '+e.message,'err');}finally{hideLoad();}
+  try{
+    // Strip flags from gameState before sending (they cause encoding issues)
+    // Apps Script will not overwrite flags — we store them separately
+    var gsToSend = JSON.parse(JSON.stringify(DB.gameState));
+    gsToSend.countries = gsToSend.countries.map(function(c){
+      return {code:c.code,name:c.name,group:c.group,prob:c.prob,price:c.price,base:c.base,elim:c.elim};
+    });
+    var r = await api({action:'admin_save', adminPassword:'admin2026', gameState:JSON.stringify(gsToSend)});
+    if(r && r.ok){
+      toast('Prices updated and saved','ok');
+      renderAdmin();
+    } else {
+      toast((r && r.error) || 'Save failed','err');
+    }
+  }catch(e){ toast('Error: '+e.message,'err'); }
+  finally{ hideLoad(); }
 }
 async function admToggleElim(code){
-  const c=gc(code);c.elim=!c.elim;if(c.elim)c.price=0;
+  var country=gc(code);
+  country.elim=!country.elim;
+  if(country.elim) country.price=0;
   showLoad('Saving...');
-  try{const r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(DB.gameState)});
-    if(r.ok){toast(`${c.name} ${c.elim?'eliminated':'reinstated'}`,'ok');renderAdmin();}else toast(r.error,'err');
+  try{
+    var gsToSend = JSON.parse(JSON.stringify(DB.gameState));
+    gsToSend.countries = gsToSend.countries.map(function(c){
+      return {code:c.code,name:c.name,group:c.group,prob:c.prob,price:c.price,base:c.base,elim:c.elim};
+    });
+    var r=await api({action:'admin_save',adminPassword:'admin2026',gameState:JSON.stringify(gsToSend)});
+    if(r&&r.ok){toast(country.name+' '+(country.elim?'eliminated':'reinstated'),'ok');renderAdmin();}
+    else toast((r&&r.error)||'Save failed','err');
   }catch(e){toast('Error: '+e.message,'err');}finally{hideLoad();}
 }
 
