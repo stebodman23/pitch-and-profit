@@ -241,7 +241,7 @@ html,body{height:100%;background:var(--dark);color:var(--t1);font-family:var(--f
         <table class="tbl">
           <thead><tr>
             <th style="padding-left:14px">Country</th>
-            <th>Group</th><th>Prob.</th><th>Price</th><th>Change</th><th>Status</th><th></th>
+            <th>Group</th><th>Prob.</th><th>Price</th><th>Daily change</th><th>Status</th><th></th>
           </tr></thead>
           <tbody id="mkt-tbody"></tbody>
         </table>
@@ -396,7 +396,7 @@ html,body{height:100%;background:var(--dark);color:var(--t1);font-family:var(--f
 // ══════════════════════════════════════════════════════════
 //  REPLACE THIS with your Apps Script /exec URL
 // ══════════════════════════════════════════════════════════
-const SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbw2_UFOYyudLLV2QbOMDNlaLkhZZ5HjrB_LdQqLG9LJe6GrY7HqU8auf-S9BZReBZvZ/exec';
+const SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbz4fcI0CaOzQHxtp2-wZLria7VJS7KhKp80_nMzWMkaiwpzA3UFIogkHEyD5PyJqr8/exec';
 const DRIVE_FILE_ID = '1kPRosdYLLSxQ18Vg64YVhHYx7xJeKP7M';
 const DRIVE_API_KEY = 'AIzaSyBDHkbGFDWXVGyQ9CNFCF0xZ0YBkycxjiM';
 
@@ -900,7 +900,11 @@ function renderMarket(){
     return b.price-a.price;
   });
   document.getElementById('mkt-tbody').innerHTML=sorted.map(c=>{
-    const owned=mine[c.code]||0,chg=c.price-c.base,cp=c.base>0?((chg/c.base)*100).toFixed(1):0,cc=chg>0?'up':chg<0?'dn':'fl';
+    const owned=mine[c.code]||0;
+    // Change = difference in probability percentage POINTS since previous update (not % of %)
+    const prevP = (typeof c.prevProb === 'number') ? c.prevProb : c.prob;
+    const ptDiff = Math.round((c.prob - prevP)*10)/10;
+    const cc = ptDiff>0?'up':ptDiff<0?'dn':'fl';
     return`<tr ${c.elim?'style="opacity:.4"':''}><td style="padding-left:14px">
       <div style="display:flex;align-items:center;gap:7px">
       <span style="font-weight:500;color:var(--t1)">${flagImg(c.code)}${c.name}</span>
@@ -908,7 +912,7 @@ function renderMarket(){
       <td><span style="font-size:11px;background:var(--s3);padding:2px 7px;border-radius:4px;color:var(--t2)">${c.group||'—'}</span></td>
       <td><div style="font-size:12px">${c.prob}%</div><div class="pbar"><div class="pfill" style="width:${Math.min(c.prob*6,100)}%"></div></div></td>
       <td><span class="mono">${f(c.price)}</span></td>
-      <td class="${cc} mono">${chg>=0?'+':''}${cp}%</td>
+      <td class="${cc} mono">${ptDiff>0?'+':''}${ptDiff}pp</td>
       <td>${c.elim?'<span class="badge b-red">Out</span>':''}</td>
       <td style="padding-right:12px">${!c.elim&&open?`<button class="btn btn-xs btn-g" onclick="quickBuy('${c.code}')">Buy</button>`:''}</td></tr>`;
   }).join('');
