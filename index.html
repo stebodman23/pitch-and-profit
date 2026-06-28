@@ -346,6 +346,7 @@ html,body{height:100%;background:var(--dark);color:var(--t1);font-family:var(--f
           <select id="adm-phase">
             <option value="pre">Pre-tournament</option>
             <option value="groups">Group stage</option>
+            <option value="r32">Round of 32</option>
             <option value="r16">Round of 16</option>
             <option value="quarters">Quarter-finals</option>
             <option value="semis">Semi-finals</option>
@@ -400,8 +401,8 @@ const SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbz4fcI0CaOzQHxtp2
 const DRIVE_FILE_ID = '1kPRosdYLLSxQ18Vg64YVhHYx7xJeKP7M';
 const DRIVE_API_KEY = 'AIzaSyBDHkbGFDWXVGyQ9CNFCF0xZ0YBkycxjiM';
 
-const PHASES  = ['pre','groups','r16','quarters','semis','final','complete'];
-const PLABELS = {pre:'Pre-tournament',groups:'Group stage',r16:'Round of 16',quarters:'Quarters',semis:'Semis',final:'Final',complete:'Complete'};
+const PHASES  = ['pre','groups','r32','r16','quarters','semis','final','complete'];
+const PLABELS = {pre:'Pre-tournament',groups:'Group stage',r32:'Round of 32',r16:'Round of 16',quarters:'Quarters',semis:'Semis',final:'Final',complete:'Complete'};
 // ── MATCH SCHEDULE (BST) ─────────────────────────────────────────────────
 // Trading locked from kick-off until 3 hours after start of each match
 const SCHEDULE = [
@@ -950,7 +951,7 @@ function tv(b,h){return b+hv(h);}
 function ac(h){return Object.keys(h||{}).filter(k=>(h[k]||0)>0).length;}
 function f(n){return '£'+Math.round(n).toLocaleString();}
 function fc(n){return(n>=0?'+':'')+f(n);}
-function isPost(){return['groups','r16','quarters','semis','final','complete'].includes(DB.gameState.phase);}
+function isPost(){return['groups','r32','r16','quarters','semis','final','complete'].includes(DB.gameState.phase);}
 
 // ── Phase bar ────────────────────────────────────────────
 function renderPhaseBar(){
