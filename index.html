@@ -578,6 +578,122 @@ function getNextMatch() {
   return next;
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// LIVE FIXTURE RESOLVER
+// Fetches the openfootball World Cup 2026 JSON (free, public domain, no key)
+// to resolve knockout-stage placeholder labels ("W74", "2A", etc.) into
+// real team names once results are known. Falls back to the placeholder
+// itself (e.g. "Winner of Match 74") if the result isn't in yet.
+// Cached in-memory for the session to avoid refetching on every render.
+// ═══════════════════════════════════════════════════════════════════════
+let LIVE_FIXTURES = null;
+let LIVE_FIXTURES_FETCHED_AT = 0;
+const FIXTURES_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
+const FIXTURES_CACHE_MS = 60 * 60 * 1000; // 1 hour
+
+async function loadLiveFixtures(){
+  const now = Date.now();
+  if(LIVE_FIXTURES && (now - LIVE_FIXTURES_FETCHED_AT) < FIXTURES_CACHE_MS){
+    return LIVE_FIXTURES;
+  }
+  try{
+    const resp = await fetch(FIXTURES_URL);
+    if(!resp.ok) throw new Error('Fixtures fetch failed: '+resp.status);
+    const data = await resp.json();
+    LIVE_FIXTURES = data.matches || [];
+    LIVE_FIXTURES_FETCHED_AT = now;
+    return LIVE_FIXTURES;
+  }catch(e){
+    console.warn('loadLiveFixtures failed:', e.message);
+    return LIVE_FIXTURES || [];
+  }
+}
+
+// Build a lookup: match number -> winner team name (only for decided matches)
+function buildMatchWinners(fixtures){
+  const winners = {};
+  fixtures.forEach(m=>{
+    if(!m.num || !m.score || !m.score.ft) return;
+    const ft = m.score.ft;
+    if(ft[0] === ft[1]) return; // draw — knockout matches can't actually draw, but guard anyway
+    winners[m.num] = ft[0] > ft[1] ? m.team1 : m.team2;
+  });
+  return winners;
+}
+
+// Build a lookup: "1A","2B",etc -> team name, from completed group standings
+// (only reliable once the group is fully finished — openfootball fills these
+// in automatically once results are confirmed upstream)
+function buildGroupPositions(fixtures){
+  // openfootball doesn't give us standings directly, but once it knows the
+  // round of 32 teams it just writes the real name instead of "1A" etc.
+  // So we don't need to compute standings ourselves — just detect whether
+  // a label looks like a placeholder or a real name.
+  return {};
+}
+
+function isPlaceholderLabel(label){
+  if(!label) return true;
+  // Placeholders look like: "1A", "2B", "3C/D/F/G/H", "W74", "L101"
+  return /^[0-9]+[A-L](\/[A-L])*$/.test(label) || /^[WL][0-9]+$/.test(label);
+}
+
+function resolveLabel(label, winners){
+  if(!isPlaceholderLabel(label)) return label; // already a real team name
+  const m = label.match(/^W([0-9]+)$/);
+  if(m && winners[m[1]]) return winners[m[1]];
+  if(m) return 'Winner of Match '+m[1];
+  const l = label.match(/^L([0-9]+)$/);
+  if(l) return 'Loser of Match '+l[1];
+  // Group position placeholders like "1A" or "3C/D/F/G/H" — too complex to
+  // resolve without standings data; show a friendly fallback
+  const pos = label.match(/^([0-9])([A-L])$/);
+  if(pos) return (pos[1]==='1'?'Winner':pos[1]==='2'?'Runner-up':'3rd place') + ' Group ' + pos[2];
+  if(label.includes('/')) return '3rd-placed team (Groups ' + label.replace(/^3/,'') + ')';
+  return label;
+}
+
+// Get the next match with resolved team names, using live fixture data
+// where available, falling back to the static SCHEDULE for kick-off lock times
+async function getNextMatchResolved(){
+  const fixtures = await loadLiveFixtures();
+  if(!fixtures.length) return getNextMatch(); // fallback to static schedule
+
+  const winners = buildMatchWinners(fixtures);
+  const now = Date.now();
+  let next = null, nextMs = Infinity;
+
+  fixtures.forEach(m=>{
+    if(!m.date || !m.time) return;
+    if(m.score) return; // already played
+    // Parse "HH:MM UTC-X" format
+    const timeMatch = m.time.match(/(\d{1,2}):(\d{2})\s*UTC([+-]\d+)/);
+    if(!timeMatch) return;
+    const [, hh, mm, offset] = timeMatch;
+    const [y,mo,d] = m.date.split('-').map(Number);
+    // Convert local kickoff + UTC offset to true UTC timestamp
+    const utcMs = Date.UTC(y, mo-1, d, parseInt(hh) - parseInt(offset), parseInt(mm));
+    if(utcMs > now && utcMs < nextMs){
+      nextMs = utcMs;
+      next = m;
+    }
+  });
+
+  if(!next) return getNextMatch();
+
+  const team1 = resolveLabel(next.team1, winners);
+  const team2 = resolveLabel(next.team2, winners);
+
+  return {
+    ko: new Date(nextMs).toISOString(),
+    label: team1 + ' vs ' + team2,
+    round: next.round,
+    ground: next.ground,
+    isLive: true
+  };
+}
+
+
 
 const FLAG_ISO={'CZE':'cz','MEX':'mx','RSA':'za','KOR':'kr','BIH':'ba','CAN':'ca','QAT':'qa','SUI':'ch','BRA':'br','HAI':'ht','MAR':'ma','SCO':'gb-sct','AUS':'au','PAR':'py','TUR':'tr','USA':'us','CUW':'cw','ECU':'ec','GER':'de','CIV':'ci','JPN':'jp','NED':'nl','SWE':'se','TUN':'tn','BEL':'be','EGY':'eg','IRN':'ir','NZL':'nz','CPV':'cv','KSA':'sa','ESP':'es','URU':'uy','FRA':'fr','IRQ':'iq','NOR':'no','SEN':'sn','ALG':'dz','ARG':'ar','AUT':'at','JOR':'jo','COL':'co','COD':'cd','POR':'pt','UZB':'uz','CRO':'hr','ENG':'gb-eng','GHA':'gh','PAN':'pa'};
 function flagImg(code){
@@ -930,7 +1046,7 @@ function setBuySort(mode){
   renderTrade();
 }
 
-function renderTrade(){
+async function renderTrade(){
   const open=DB.gameState.marketOpen;
   // Check match schedule lock
   const lockStatus = getMatchLockStatus();
@@ -940,23 +1056,23 @@ function renderTrade(){
     matchLockBanner.style.display = 'block';
   } else {
     matchLockBanner.style.display = 'none';
-    // Show next match info if market is open
-    const next = getNextMatch();
-    if(next && open){
-      const koDate = new Date(Date.UTC(
-        parseInt(next.ko.split('T')[0].split('-')[0]),
-        parseInt(next.ko.split('T')[0].split('-')[1])-1,
-        parseInt(next.ko.split('T')[0].split('-')[2]),
-        parseInt(next.ko.split('T')[1].split(':')[0])-1,
-        parseInt(next.ko.split('T')[1].split(':')[1])
-      ));
-      const koStr = koDate.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/London'})
-        + ' ' + koDate.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'});
-      matchLockBanner.innerHTML = `⏱ Next trading pause: <b>${next.label}</b> — ${koStr} BST`;
+    // Show next match info if market is open — resolve real team names where known
+    if(open){
+      matchLockBanner.innerHTML = '⏱ Loading next match...';
       matchLockBanner.style.display = 'block';
       matchLockBanner.style.background = 'rgba(26,107,58,0.06)';
       matchLockBanner.style.borderColor = 'rgba(26,107,58,0.25)';
       matchLockBanner.style.color = 'var(--green)';
+      const next = await getNextMatchResolved();
+      if(next){
+        const koDate = new Date(next.ko);
+        const koStr = koDate.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/London'})
+          + ' ' + koDate.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'});
+        const roundTag = next.round ? `<span style="font-size:11px;color:var(--t3);margin-left:6px">(${next.round})</span>` : '';
+        matchLockBanner.innerHTML = `⏱ Next trading pause: <b>${next.label}</b>${roundTag} — ${koStr} BST`;
+      } else {
+        matchLockBanner.style.display = 'none';
+      }
     }
   }
   const effectivelyOpen = open && !lockStatus.locked;
